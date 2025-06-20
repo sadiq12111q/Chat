@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>منصة دردشة احترافية</title>
+    <style>
+        /* --- 1. الإعدادات الأساسية والمتغيرات --- */
+        :root {
+            --primary-color: #6A5ACD; --secondary-color: #7B68EE; --accent-color: #00C9A7;
+            --danger-color: #E94560; --read-receipt-color: #00C9A7; --info-color: #3498db;
+            --background-color: #F4F6FC; --chat-bg-color: #EAEBEE;
+            --my-message-bg: linear-gradient(135deg, #6A5ACD, #7B68EE);
+            --other-message-bg: #FFFFFF; --text-color: #2c3e50; --light-text-color: #8a99ab;
+            --white-color: #FFFFFF; --border-color: #e1e5ea; --deleted-message-color: #95a5a6;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.06); --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { height: -webkit-fill-available; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--primary-color); color: var(--text-color); height: 100vh; height: 100svh; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .hidden { display: none !important; } .icon { width: 24px; height: 24px; stroke-width: 2; }
+        .icon-sm { width: 16px; height: 16px; stroke-width: 2.5; } .icon-btn { background:none; border:none; cursor:pointer; padding: 4px; color: var(--light-text-color); display:flex; align-items:center; }
+        .icon-btn:hover { color: var(--primary-color); } .btn-secondary { background: var(--background-color); color: var(--text-color); border: 1px solid var(--border-color); }
+        .btn-primary { background-color: var(--primary-color); color: var(--white-color); border: none; }
+        #app-wrapper { width: 100%; height: 100%; max-width: 450px; background: var(--background-color); display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
+        @media (min-width: 451px) { #app-wrapper { max-height: 90vh; border-radius: 20px; } }
+        /* --- 2. واجهة المصادقة (Auth) --- */
+        #auth-view { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: var(--background-color); color: var(--text-color); }
+        .auth-box { background: var(--white-color); padding: 40px 30px; border-radius: 16px; box-shadow: var(--card-shadow); width: 100%; max-width: 350px; }
+        .auth-box h2 { text-align: center; margin-bottom: 25px; color: var(--primary-color); font-size: 24px; }
+        .auth-form input, .auth-form select, .auth-form textarea { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 16px; font-family: 'Tajawal'; background: var(--background-color); }
+        .auth-form input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.2); }
+        .auth-form button { width: 100%; padding: 14px; border: none; border-radius: 10px; background-color: var(--primary-color); color: var(--white-color); font-size: 18px; font-weight: 700; cursor: pointer; transition: background-color 0.3s, transform 0.2s; }
+        .auth-toggle { text-align: center; margin-top: 20px; font-size: 14px; } .auth-toggle a { color: var(--primary-color); text-decoration: none; cursor: pointer; font-weight: 700; }
+        .auth-error { color: var(--danger-color); text-align: center; margin-bottom: 15px; font-size: 14px; min-height: 20px; font-weight: 500;}
+        .auth-footer, .settings-footer { text-align: center; margin-top: 30px; font-size: 12px; color: var(--light-text-color); }
+        .settings-footer { padding-bottom: 20px; }
+        /* --- 3. الواجهة الرئيسية --- */
+        #main-app-view { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        #app-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--white-color); color: var(--primary-color); flex-shrink: 0; box-shadow: var(--header-shadow); z-index: 10; }
+        #welcome-message { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        #logout-btn { background: none; border: none; color: var(--light-text-color); cursor: pointer; padding: 5px; }
+        #app-content { flex-grow: 1; overflow-y: auto; padding: 20px 15px; padding-bottom: 90px; }
+        .list-view h3, .list-view h4 { margin-bottom: 15px; padding-right: 5px; color: var(--primary-color); font-size: 20px; font-weight: 700; }
+        .list-item, .request-item, .friend-item, .search-result-item, .group-item { display: flex; align-items: center; padding: 15px; border-radius: 12px; margin-bottom: 12px; background: var(--white-color); box-shadow: var(--card-shadow); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .list-item:active, .search-result-item:active, .group-item:active { transform: scale(0.98); } .list-item-content { flex-grow: 1; font-weight: 500; font-size: 16px; display: flex; align-items: center; gap: 8px;}
+        .verified-badge { color: var(--info-color); width: 18px; height: 18px; flex-shrink: 0; }
+        .unread-badge { background-color: var(--accent-color); color: white; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-right: auto; }
+        .list-item-details { display: flex; flex-direction: column; flex-grow: 1; gap: 4px; overflow: hidden; }
+        .list-item-name { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
+        .list-item-last-msg { font-size: 13px; color: var(--light-text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .list-item-extra { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+        .online-indicator { width: 12px; height: 12px; background-color: var(--light-text-color); border-radius: 50%; margin: 0; transition: background-color 0.3s; border: 2px solid var(--background-color); }
+        .online-indicator.online { background-color: var(--accent-color); }
+        #no-private-chats-placeholder, #no-groups-placeholder { text-align: center; padding: 40px 20px; color: var(--light-text-color); background: transparent; box-shadow: none; display:none; }
+        #app-nav { position: absolute; bottom: 0; right: 0; left: 0; display: flex; background-color: var(--white-color); flex-shrink: 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.07); padding: 10px 0; border-top-right-radius: 20px; border-top-left-radius: 20px; }
+        .nav-btn { flex-grow: 1; padding: 8px 5px; text-align: center; cursor: pointer; border: none; background: none; color: var(--light-text-color); transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; }
+        .nav-btn.active { color: var(--primary-color); transform: translateY(-3px); } .nav-btn.active .icon { stroke: var(--primary-color); }
+        .form-group { display: flex; flex-direction: column; gap: 15px; padding: 20px; background: var(--white-color); border-radius: 12px; box-shadow: var(--card-shadow); margin-bottom: 20px; }
+        #search-user-form { flex-direction: row; align-items: center; padding: 10px; }
+        .form-group input, #search-username-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--background-color); font-family: 'Tajawal'; }
+        .form-group button { padding: 12px 15px; border: none; background-color: var(--secondary-color); color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        /* --- 4. واجهة الدردشة --- */
+        #chat-view { position: absolute; top: 0; right: 0; width: 100%; height: 100%; background: var(--chat-bg-color); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; }
+        #chat-view.active { transform: translateX(0); }
+        .chat-header { background-color: var(--white-color); color: var(--text-color); padding: 10px 15px; display: flex; align-items: center; box-shadow: var(--header-shadow); flex-shrink: 0; gap: 10px; }
+        #back-to-list-btn { background: none; border: none; color: var(--text-color); cursor: pointer; }
+        .chat-title-group { flex-grow: 1; } #chat-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        #typing-indicator { font-size: 12px; color: var(--accent-color); height: 16px; font-style: italic; transition: opacity 0.3s; }
+        #pinned-message-bar { padding: 8px 15px; background: rgba(106, 90, 205, 0.1); color: var(--primary-color); font-size: 13px; text-align: center; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .messages-list { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+        .chat-start-info { text-align: center; color: var(--light-text-color); padding: 20px; font-size: 13px; }
+        .message-form-container { flex-shrink: 0; display: flex; padding: 10px 15px; background-color: var(--white-color); border-top: 1px solid var(--border-color); align-items: center; box-shadow: 0 -2px 5px rgba(0,0,0,0.05); }
+        #message-form { width: 100%; display:flex; align-items: center; gap: 10px; }
+        #message-input { flex-grow: 1; padding: 12px 20px; border: none; border-radius: 25px; font-size: 16px; background-color: var(--background-color); }
+        #message-input:focus { outline: none; }
+        #send-button { width: 48px; height: 48px; border: none; background-color: var(--light-text-color); color: white; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: all 0.2s; transform: scale(0.9); }
+        #send-button.has-text { background-color: var(--primary-color); transform: scale(1); }
+        .message { max-width: 85%; padding: 10px 15px; border-radius: 20px; display: flex; flex-direction: column; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 2px; }
+        .message.flagged { border-left-color: var(--danger-color); }
+        .message.my-message { background: var(--my-message-bg); align-self: flex-end; color: var(--white-color); border-bottom-right-radius: 5px; } 
+        .message.other-message { background-color: var(--other-message-bg); align-self: flex-start; border-bottom-left-radius: 5px; } 
+        .message.consecutive { margin-top: 0; margin-bottom: 0; border-radius: 20px; }
+        .my-message.consecutive { border-top-right-radius: 5px; border-bottom-right-radius: 5px; } .other-message.consecutive { border-top-left-radius: 5px; border-bottom-left-radius: 5px; }
+        .message-content { display: flex; align-items: flex-end; flex-wrap: wrap; }
+        .message-text { font-size: 15px; line-height: 1.5; word-wrap: break-word; min-width: 0; }
+        .message.other-message .sender-name { font-size: 12px; font-weight: 700; color: var(--primary-color); margin-bottom: 4px; }
+        .message.deleted .message-text { color: var(--deleted-message-color); font-style: italic; }
+        .message-meta { font-size: 11px; color: var(--light-text-color); display: flex; align-items: center; gap: 4px; margin-right: auto; padding-left: 10px; white-space: nowrap; align-self: flex-end; flex-shrink: 0; }
+        .message.my-message .message-meta { color: rgba(255, 255, 255, 0.8); }
+        .message.my-message .message-status svg { stroke: rgba(255, 255, 255, 0.9); } .message.my-message .message-status svg[style*="var(--read-receipt-color)"] { stroke: var(--read-receipt-color); }
+        .message-actions { position: absolute; top: -12px; left: -12px; display: none; background: #fff; box-shadow: var(--card-shadow); border-radius: 20px; padding: 2px; gap: 2px;}
+        .message:hover .message-actions { display: flex; }
+        .message-actions button { background: none; border: none; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; color: var(--light-text-color); }
+        .message-actions button:hover { color: var(--primary-color); } .message-actions .delete-btn:hover { color: var(--danger-color); }
+        /* --- واجهة البحث --- */
+        #search-results { min-height: 200px; display: flex; justify-content: center; align-items: center; }
+        .search-placeholder { text-align: center; color: var(--light-text-color); }
+        .search-placeholder svg { width: 60px; height: 60px; margin-bottom: 15px; stroke: var(--border-color); }
+        .loader { width: 32px; height: 32px; border: 4px solid var(--background-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .search-result-item { cursor: default; flex-direction: column; align-items: stretch; }
+        .result-content { display: flex; align-items: center; flex-grow: 1; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--secondary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; margin-left: 15px; }
+        .user-info .display-name { font-weight: 700; font-size: 16px; color: var(--text-color); display: flex; align-items: center; gap: 5px;} .user-info .username { font-size: 14px; color: var(--light-text-color); }
+        .result-action button { border: none; padding: 8px 14px; border-radius: 8px; color: white; cursor: pointer; font-weight: 700; font-family: 'Tajawal'; }
+        .result-action .send-request-btn { background-color: var(--accent-color); color: var(--text-color); }
+        /* --- 5. إشعارات Toast --- */
+        #toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 90%; max-width: 420px; }
+        .toast { padding: 12px 20px; color: white; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.2); opacity: 0; transform: translateY(20px); transition: all 0.3s; font-weight: 500; text-align: center; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background-color: var(--accent-color); } .toast.error { background-color: var(--danger-color); } .toast.info { background-color: var(--info-color); }
+        /* --- 6. واجهة الإعدادات --- */
+        .settings-group { margin-bottom: 25px; } .settings-group-title { color: var(--primary-color); font-size: 16px; font-weight: 700; margin-bottom: 10px; padding-right: 5px; }
+        .settings-list { background: var(--white-color); border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--background-color); font-size: 16px; }
+        .settings-item:last-child { border-bottom: none; } .settings-item.clickable { cursor: pointer; }
+        .settings-item .value { color: var(--light-text-color); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+        .settings-item.danger { color: var(--danger-color); }
+        #edit-display-name-form { padding: 15px; border-top: 1px solid var(--background-color); display: flex; gap: 10px; align-items: center; }
+        #friends-management-list .friend-item, #group-members-list li, #group-join-requests-list li { box-shadow: none; padding: 15px; margin-bottom: 0; border-bottom: 1px solid var(--background-color); border-radius: 0; cursor: default; flex-wrap: wrap; }
+        .request-actions button, .friend-item .remove-btn, .member-actions button { border: none; padding: 8px 14px; border-radius: 8px; color: white; cursor: pointer; margin-right: 5px; font-weight: 500; font-family: 'Tajawal'; }
+        .request-actions .accept-btn, .member-actions .promote-btn { background-color: var(--secondary-color); } .request-actions .decline-btn, .friend-item .remove-btn, .member-actions .kick-btn { background-color: var(--danger-color); }
+        /* --- 7. ميزات الكروبات --- */
+        .groups-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .group-item-info { flex-grow: 1; overflow: hidden; }
+        .group-item-name { font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 16px; }
+        .group-item-desc { font-size: 13px; color: var(--light-text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+        .group-item-meta { display: flex; align-items: center; gap: 15px; color: var(--light-text-color); font-size: 12px; flex-shrink: 0; }
+        .group-item-meta span { display: flex; align-items: center; gap: 4px; }
+        #create-group-modal { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 1100; display:flex; justify-content:center; align-items:center; padding: 20px; }
+        .filters-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filters-bar select, .filters-bar input { padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: 'Tajawal'; background-color: var(--white-color); }
+        #group-info-view { position: absolute; top: 0; right: 0; width: 100%; height: 100%; background: var(--background-color); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1001; }
+        #group-info-view.active { transform: translateX(0); }
+        .member-role { font-size: 12px; background-color: var(--light-text-color); color: white; padding: 2px 8px; border-radius: 10px; }
+        .member-role.owner { background-color: var(--primary-color); } .member-role.admin { background-color: var(--accent-color); }
+        .member-actions { margin-right: auto; }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <!-- 1. واجهة المصادقة (معدّلة لتسجيل الدخول بجوجل) -->
+    <div id="auth-view">
+        <div class="auth-box" style="text-align: center;">
+            <h2 style="font-size: 26px; margin-bottom: 15px;">منصة دردشة احترافية</h2>
+            <p style="color: var(--light-text-color); margin-bottom: 30px;">سجّل دخولك بأمان للبدء</p>
+            <button id="google-signin-btn" style="width: 100%; padding: 14px; border: none; border-radius: 10px; background-color: #4285F4; color: white; font-size: 18px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background-color 0.3s;">
+                <svg style="width: 20px; height: 20px;" viewBox="0 0 18 18"><g fill="none" fill-rule="evenodd"><path d="M17.64 9.2045c0-.6382-.0573-1.2518-.1636-1.8409H9.1818v3.4818h4.7909c-.2045 1.125-.8182 2.0727-1.7364 2.7182v2.2591h2.9091c1.7045-1.5682 2.6818-3.8727 2.6818-6.6182z" fill="#4285F4"></path><path d="M9.1818 18c2.4318 0 4.4636-.8045 5.9545-2.1818l-2.9091-2.2591c-.8045.5455-1.8409.8727-3.0455.8727-2.3091 0-4.2545-1.5682-4.9545-3.6591H1.2273v2.3318C2.7182 15.9091 5.6591 18 9.1818 18z" fill="#34A853"></path><path d="M4.2273 10.75c-.1409-.4227-.2182-.8818-.2182-1.35s.0773-.9273.2182-1.35V5.7182H1.2273C.4591 7.0818 0 8.4909 0 10.0318s.4591 2.95 1.2273 4.3136l3-2.3318z" fill="#FBBC05"></path><path d="M9.1818 3.6591c1.3182 0 2.5045.4545 3.4364 1.35l2.5864-2.5864C13.6364.8182 11.6045 0 9.1818 0 5.6591 0 2.7182 2.0909 1.2273 4.9364l3 2.3318c.7-2.0909 2.6455-3.6091 4.9545-3.6091z" fill="#EA4335"></path></g></svg>
+                <span>تسجيل الدخول باستخدام Google</span>
+            </button>
+            <footer class="auth-footer">
+                <p>&copy; 2025 - تطوير صادق البصراوي</p>
+            </footer>
+        </div>
+    </div>
+
+
+    <!-- 2. التطبيق الرئيسي -->
+    <div id="main-app-view" class="hidden">
+        <header id="app-header">
+            <span id="welcome-message"></span>
+            <button id="logout-btn" title="تسجيل الخروج">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </header>
+
+        <main id="app-content">
+            <!-- عرض المحادثات الخاصة -->
+            <div id="private-chats-list-view" class="list-view">
+                <h4>طلبات الصداقة</h4>
+                <ul id="friend-requests-list"></ul>
+                <h3 style="margin-top: 20px;">المحادثات الخاصة</h3>
+                <ul id="private-chats-list"></ul>
+                <div id="no-private-chats-placeholder">لا توجد محادثات خاصة بعد. ابحث عن أصدقاء!</div>
+            </div>
+            
+            <!-- عرض الكروبات -->
+            <div id="groups-view" class="list-view hidden">
+                <div class="groups-header">
+                    <h3>الكروبات</h3>
+                    <button id="create-group-btn" class="btn-primary" style="padding: 8px 12px; border-radius: 8px; font-weight:700;">+ إنشاء كروب</button>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <h4>الانضمام لكروب خاص</h4>
+                    <form id="join-private-group-form" style="flex-direction: row; align-items: center; gap: 10px; padding: 0;">
+                        <input type="text" id="private-group-id-input" placeholder="أدخل ID الكروب (مثال: +12345)" required>
+                        <button type="submit" class="btn-primary" style="padding: 12px 15px;">طلب انضمام</button>
+                    </form>
+                </div>
+                
+                <h4>كروباتي</h4>
+                <ul id="my-groups-list"></ul>
+                 <div id="no-groups-placeholder">أنت لست عضواً في أي كروب بعد.</div>
+                
+                <h4 style="margin-top: 20px;">اكتشف كروبات عامة</h4>
+                <div class="filters-bar">
+                    <select id="filter-country"><option value="">كل الدول</option></select>
+                    <select id="filter-sort">
+                        <option value="newest">الأحدث</option>
+                        <option value="members">الأكثر أعضاء</option>
+                    </select>
+                </div>
+                <ul id="public-groups-list"></ul>
+            </div>
+            
+            <!-- عرض البحث -->
+            <div id="search-view" class="list-view hidden">
+                <h3>البحث عن مستخدمين</h3>
+                <form id="search-user-form" class="form-group">
+                    <input type="text" id="search-username-input" placeholder="ابحث باسم المستخدم..." required>
+                    <button type="submit">
+                        <svg class="icon" style="stroke: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </button>
+                </form>
+                <div id="search-results"></div>
+            </div>
+
+            <!-- عرض الإعدادات -->
+            <div id="settings-view" class="list-view hidden">
+                <h3>الإعدادات</h3>
+                <div class="settings-group">
+                    <h4 class="settings-group-title">الحساب</h4>
+                    <div class="settings-list">
+                        <div class="settings-item"><span>معرّف الحساب (UID)</span><span id="setting-username" class="value" style="font-size: 12px; direction: ltr;"></span></div>
+                        <div id="display-name-container">
+                            <div class="settings-item">
+                                <span>الاسم الظاهر</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span id="setting-display-name" class="value"></span>
+                                    <button id="edit-display-name-btn" class="icon-btn" title="تعديل"><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg></button>
+                                </div>
+                            </div>
+                            <form id="edit-display-name-form" class="hidden" style="padding: 15px; border-top: 1px solid var(--background-color); display: flex; gap: 10px; align-items: center;">
+                                <input type="text" id="new-display-name-input" required style="flex-grow:1; padding:10px; border-radius:8px; border:1px solid var(--border-color);">
+                                <button type="submit" class="btn-primary" style="padding:10px 15px; border-radius: 8px;">حفظ</button>
+                                <button type="button" id="cancel-edit-display-name" class="btn-secondary" style="padding:10px 15px; border-radius: 8px;">إلغاء</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                 <div class="settings-group">
+                    <h4 class="settings-group-title">إدارة الأصدقاء</h4>
+                    <div class="settings-list"><ul id="friends-management-list"></ul></div>
+                </div>
+                <div class="settings-group">
+                    <h4 class="settings-group-title">منطقة الخطر</h4>
+                    <div class="settings-list"><div id="delete-account-btn" class="settings-item clickable danger"><span>حذف الحساب نهائياً</span><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></div></div>
+                </div>
+
+                <footer class="settings-footer">
+                    <p>تطبيق الدردشة &copy; 2025 - تطوير صادق البصراوي</p>
+                </footer>
+            </div>
+        </main>
+
+        <nav id="app-nav">
+            <button class="nav-btn active" data-view="private-chats-list-view"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg><span>الدردشات</span></button>
+            <button class="nav-btn" data-view="groups-view"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.134-1.274-.38-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.134-1.274.38-1.857m1.62 0A10.023 10.023 0 0112 16c2.236 0 4.29-.756 6-2m-12 2A10.023 10.023 0 0112 16c-2.236 0-4.29-.756-6-2m0 0a3 3 0 01-3-3V7a3 3 0 013-3h12a3 3 0 013 3v2"></path></svg><span>الكروبات</span></button>
+            <button class="nav-btn" data-view="search-view"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><span>بحث</span></button>
+            <button class="nav-btn" data-view="settings-view"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>الإعدادات</span></button>
+        </nav>
+    </div>
+
+    <!-- واجهة الدردشة -->
+    <div id="chat-view">
+        <header class="chat-header">
+            <button id="back-to-list-btn"><svg class="icon" style="transform: rotate(180deg);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg></button>
+            <div class="chat-title-group"><h2 id="chat-title"></h2><div id="typing-indicator"></div></div>
+            <button id="group-info-btn" class="icon-btn hidden"><svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
+        </header>
+        <div id="pinned-message-bar" class="hidden"></div>
+        <main class="messages-list" id="messages-list"></main>
+        <footer class="message-form-container">
+            <form id="message-form" onsubmit="return false;">
+                <input type="text" id="message-input" placeholder="اكتب رسالتك..." autocomplete="off">
+                <button type="button" id="send-button"><svg class="icon" style="transform: rotate(-45deg); margin-left: -3px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+            </form>
+        </footer>
+    </div>
+    
+    <!-- واجهة معلومات الكروب -->
+    <div id="group-info-view">
+        <header class="chat-header">
+            <button id="back-to-chat-btn"><svg class="icon" style="transform: rotate(180deg);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg></button>
+            <div class="chat-title-group"><h2 id="group-info-title">معلومات الكروب</h2></div>
+        </header>
+        <main style="flex-grow:1; overflow-y:auto; padding: 20px;">
+            <div id="group-info-details" class="settings-group"></div>
+            <div id="group-join-requests-section" class="settings-group hidden">
+                <h4 class="settings-group-title">طلبات الانضمام</h4>
+                <div class="settings-list"><ul id="group-join-requests-list"></ul></div>
+            </div>
+            <div class="settings-group">
+                <h4 class="settings-group-title" id="group-members-title">الأعضاء</h4>
+                <div class="settings-list"><ul id="group-members-list"></ul></div>
+            </div>
+            <div id="group-danger-zone" class="settings-group">
+                <h4 class="settings-group-title">منطقة الخطر</h4>
+                <div class="settings-list">
+                     <div id="leave-group-btn" class="settings-item clickable danger"><span>مغادرة الكروب</span></div>
+                     <div id="delete-group-btn" class="settings-item clickable danger hidden"><span>حذف الكروب نهائياً</span></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal إنشاء كروب -->
+    <div id="create-group-modal" class="hidden">
+        <div class="auth-box" style="width: 90%; max-width: 400px;">
+            <form id="create-group-form" class="auth-form">
+                <h2>إنشاء كروب جديد</h2>
+                <input type="text" id="create-group-name" placeholder="اسم الكروب" required>
+                <textarea id="create-group-desc" placeholder="وصف الكروب (اختياري)" style="min-height: 80px;"></textarea>
+                <select id="create-group-country" required></select>
+                <div style="display: flex; gap: 20px; margin-bottom: 20px; justify-content: center; color: var(--text-color);">
+                    <label style="cursor:pointer;"><input type="radio" name="groupType" value="public" checked> 🔓 عام</label>
+                    <label style="cursor:pointer;"><input type="radio" name="groupType" value="private"> 🔒 خاص</label>
+                </div>
+                <button type="submit">إنشاء</button>
+                <button type="button" id="cancel-create-group" class="btn-secondary" style="margin-top: 10px;">إلغاء</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="toast-container"></div>
+</div>
+
+<script type="module">
+    // --- 1. تهيئة FIREBASE ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getDatabase, ref, get, set, update, push, onChildAdded, onChildChanged, onValue, off, onDisconnect, serverTimestamp, query, limitToLast, onChildRemoved, increment, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPQInwJ5Ifm2urgQsSNzK7ZpKTaxSmutY",
+      authDomain: "chat-app-b4ae1.firebaseapp.com",
+      databaseURL: "https://chat-app-b4ae1-default-rtdb.firebaseio.com",
+      projectId: "chat-app-b4ae1",
+      storageBucket: "chat-app-b4ae1.firebasestorage.app",
+      messagingSenderId: "358771246997",
+      appId: "1:358771246997:web:9cfdabf18b7348fc10989c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    onValue(ref(db, 'system/settings/maintenanceMode'), (snapshot) => {
+        if (snapshot.val() === true) {
+            document.body.innerHTML = `<div style="text-align:center; padding:40px; color:#fff; background-color:#34495e; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;"><h1>التطبيق تحت الصيانة</h1><p>نحن نقوم ببعض التحسينات، سنعود قريبًا.</p></div>`;
+        }
+    }, { onlyOnce: true });
+
+    // --- 2. إدارة حالة التطبيق وعناصر الواجهة ---
+    let currentUser = null, activeChat = null, typingTimeout = null, currentGroupDataCache = {};
+    let activeListeners = {}; 
+    let userCache = {};
+    const ARAB_COUNTRIES = { "DZ": "الجزائر", "BH": "البحرين", "DJ": "جيبوتي", "EG": "مصر", "IQ": "العراق", "JO": "الأردن", "KW": "الكويت", "LB": "لبنان", "LY": "ليبيا", "MR": "موريتانيا", "MA": "المغرب", "OM": "عمان", "PS": "فلسطين", "QA": "قطر", "SA": "السعودية", "SO": "الصومال", "SD": "السودان", "SY": "سوريا", "TN": "تونس", "AE": "الإمارات", "YE": "اليمن" };
+
+
+    // DOM Elements
+    const authView = document.getElementById('auth-view'), mainAppView = document.getElementById('main-app-view'),
+          chatView = document.getElementById('chat-view'),
+          welcomeMessage = document.getElementById('welcome-message'),
+          logoutBtn = document.getElementById('logout-btn'), navButtons = document.querySelectorAll('.nav-btn'),
+          contentViews = document.querySelectorAll('#app-content > .list-view'),
+          privateChatsList = document.getElementById('private-chats-list'),
+          searchUserForm = document.getElementById('search-user-form'), searchResults = document.getElementById('search-results'),
+          backToListBtn = document.getElementById('back-to-list-btn'), chatTitle = document.getElementById('chat-title'),
+          typingIndicator = document.getElementById('typing-indicator'), messagesList = document.getElementById('messages-list'),
+          messageForm = document.getElementById('message-form'), messageInput = document.getElementById('message-input'),
+          sendButton = document.getElementById('send-button'), friendRequestsList = document.getElementById('friend-requests-list'),
+          noPrivateChatsPlaceholder = document.getElementById('no-private-chats-placeholder'),
+          settingUsername = document.getElementById('setting-username'), settingDisplayName = document.getElementById('setting-display-name'),
+          editDisplayNameBtn = document.getElementById('edit-display-name-btn'), editDisplayNameForm = document.getElementById('edit-display-name-form'),
+          newDisplayNameInput = document.getElementById('new-display-name-input'), cancelEditDisplayName = document.getElementById('cancel-edit-display-name'),
+          displayNameContainer = document.getElementById('display-name-container'), 
+          friendsManagementList = document.getElementById('friends-management-list'), deleteAccountBtn = document.getElementById('delete-account-btn'),
+          // Group Elements
+          createGroupBtn = document.getElementById('create-group-btn'), createGroupModal = document.getElementById('create-group-modal'),
+          cancelCreateGroupBtn = document.getElementById('cancel-create-group'), createGroupForm = document.getElementById('create-group-form'),
+          createGroupCountrySelect = document.getElementById('create-group-country'),
+          myGroupsList = document.getElementById('my-groups-list'), publicGroupsList = document.getElementById('public-groups-list'),
+          noGroupsPlaceholder = document.getElementById('no-groups-placeholder'),
+          joinPrivateGroupForm = document.getElementById('join-private-group-form'),
+          groupInfoBtn = document.getElementById('group-info-btn'), groupInfoView = document.getElementById('group-info-view'),
+          groupInfoTitle = document.getElementById('group-info-title'), groupInfoDetails = document.getElementById('group-info-details'),
+          groupJoinRequestsSection = document.getElementById('group-join-requests-section'), groupJoinRequestsList = document.getElementById('group-join-requests-list'),
+          groupMembersList = document.getElementById('group-members-list'), groupMembersTitle = document.getElementById('group-members-title'),
+          leaveGroupBtn = document.getElementById('leave-group-btn'), deleteGroupBtn = document.getElementById('delete-group-btn'),
+          pinnedMessageBar = document.getElementById('pinned-message-bar'),
+          filterCountry = document.getElementById('filter-country'), filterSort = document.getElementById('filter-sort');
+
+    // دوال مساعدة للتوثيق والكاش
+    function getVerifiedBadge(isVerified) { if (!isVerified) return ''; return `<svg class="verified-badge" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-3.5-3.5 1.41-1.41L11 15.17l7.59-7.59L20 9l-9 9z"></path></svg>`; }
+    async function getUserData(userId) { if (userCache[userId]) return userCache[userId]; const snapshot = await get(ref(db, `users/${userId}`)); if (snapshot.exists()) { const userData = { id: userId, ...snapshot.val() }; userCache[userId] = userData; return userData; } return null; }
+    async function getGroupData(groupId) { if (currentGroupDataCache[groupId]) return currentGroupDataCache[groupId]; const snapshot = await get(ref(db, `groups/${groupId}`)); if (snapshot.exists()) { const groupData = { id: groupId, ...snapshot.val() }; currentGroupDataCache[groupId] = groupData; return groupData; } return null; }
+
+    // --- 3. نظام المصادقة والإعدادات (مُحدّث بالكامل) ---
+
+    // مراقبة حالة تسجيل دخول المستخدم بشكل دائم
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // المستخدم مسجل دخوله عبر جوجل
+            const userRef = ref(db, 'users/' + user.uid);
+            const snapshot = await get(userRef);
+
+            let userData;
+            if (snapshot.exists()) {
+                // المستخدم موجود بالفعل في قاعدة بياناتنا
+                userData = snapshot.val();
+                if(userData.isBanned === true) {
+                    forceLogout('هذا الحساب محظور.');
+                    return;
+                }
+                // قد نرغب بتحديث اسمه إذا تغير في جوجل
+                await update(userRef, {
+                    displayName: user.displayName,
+                });
+            } else {
+                // هذا مستخدم جديد، لنقم بإنشاء سجل له
+                userData = {
+                    displayName: user.displayName,
+                    email: user.email,
+                    createdAt: serverTimestamp(),
+                    isBanned: false,
+                    isVerified: false
+                };
+                await set(userRef, userData);
+                push(ref(db, 'system/live_activity'), { type: 'NEW_USER', message: `مستخدم جديد: ${userData.displayName}`, timestamp: serverTimestamp() });
+            }
+            
+            // استدعاء دالة النجاح مع بيانات المستخدم الموحّدة
+            // هام: سنستخدم user.uid كمُعرّف فريد للمستخدم بدلاً من الاسم المخصص
+            loginSuccess({
+                username: user.uid, // هذا هو التغيير الأهم!
+                ...userData
+            });
+
+        } else {
+            // المستخدم قام بتسجيل الخروج أو لم يسجل دخوله بعد
+            if(currentUser) set(ref(db, `presence/${currentUser.username}`), false);
+            currentUser = null;
+            localStorage.removeItem('chatUser'); // امسح أي بيانات قديمة
+            authView.classList.remove('hidden');
+            mainAppView.classList.add('hidden');
+        }
+    });
+
+
+    // عند الضغط على زر تسجيل الدخول بجوجل
+    document.getElementById('google-signin-btn').addEventListener('click', () => {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider)
+            .catch((error) => {
+                console.error("خطأ في تسجيل الدخول:", error);
+                showToast("حدث خطأ أثناء محاولة تسجيل الدخول. يرجى المحاولة مرة أخرى.", "error");
+            });
+    });
+
+    // تعديل دالة تسجيل الخروج
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth); // استخدم دالة تسجيل الخروج من Firebase
+    });
+
+    // دالة النجاح بعد المصادقة
+    function loginSuccess(userData) {
+        currentUser = userData;
+        // هام جداً: المُعرّف الفريد للمستخدم الآن هو user.uid من جوجل
+        // لكننا سنبقيه في currentUser.username لتجنب تعديلات كثيرة في الكود
+        userCache[currentUser.username] = currentUser; // الكي هنا هو الـ uid
+        localStorage.setItem('chatUser', JSON.stringify(currentUser));
+        authView.classList.add('hidden');
+        mainAppView.classList.remove('hidden');
+        updateWelcomeMessageAndSettings();
+        initializeMainApp();
+        setupGlobalPresence();
+        listenForSystemChanges();
+        listenForAppNotifications();
+    }
+    
+    function updateWelcomeMessageAndSettings() { if (!currentUser) return; welcomeMessage.innerHTML = `<span>أهلاً، ${currentUser.displayName}</span> ${getVerifiedBadge(currentUser.isVerified)}`; if (document.getElementById('settings-view').offsetParent) { settingDisplayName.innerHTML = `<span>${currentUser.displayName}</span> ${getVerifiedBadge(currentUser.isVerified)}`; } }
+    function forceLogout(reason) { if(currentUser) set(ref(db, `presence/${currentUser.username}`), false); currentUser = null; Object.values(activeListeners).forEach(l => { if(l && l.ref) off(l.ref, l.event, l.callback) }); activeListeners = {}; localStorage.removeItem('chatUser'); signOut(auth); document.body.innerHTML = `<div style="text-align:center; padding:40px; color:#fff; background-color:var(--danger-color); height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;"><h1>تم تسجيل الخروج</h1><p>${reason}</p><button onclick="location.reload()" style="padding:10px 20px; border:1px solid #fff; background:transparent; color:#fff; border-radius:8px; margin-top:20px; cursor:pointer;">العودة لصفحة الدخول</button></div>`; }
+    function listenForSystemChanges() { const userStatusRef = ref(db, `users/${currentUser.username}`); activeListeners.userStatus = { ref: userStatusRef, event: 'value', callback: onValue(userStatusRef, (snap) => { if (!snap.exists()) { forceLogout('تم حذف حسابك بواسطة مشرف.'); return; } const userData = snap.val(); if (userData.isBanned) { forceLogout('تم حظر حسابك بواسطة مشرف.'); } let needsUiUpdate = false; if (userData.displayName !== currentUser.displayName) { currentUser.displayName = userData.displayName; needsUiUpdate = true; } if (userData.isVerified !== currentUser.isVerified) { currentUser.isVerified = userData.isVerified; needsUiUpdate = true; } if (needsUiUpdate) { localStorage.setItem('chatUser', JSON.stringify(currentUser)); userCache[currentUser.username] = currentUser; updateWelcomeMessageAndSettings(); } })}; const announcementsRef = query(ref(db, 'system/announcements'), limitToLast(1)); activeListeners.announcements = { ref: announcementsRef, event: 'child_added', callback: onChildAdded(announcementsRef, (snap) => { const announcement = snap.val(); const announcementId = snap.key; const lastSeenId = localStorage.getItem('lastAnnouncementId'); if (announcementId !== lastSeenId) { showToast(`📢 إعلان: ${announcement.message}`, 'info', 5000); localStorage.setItem('lastAnnouncementId', announcementId); } })}; }
+    const statusIcons = { sent: `<svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`, read: `<svg class="icon-sm" style="stroke: var(--read-receipt-color);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.5 12.75l6 6 9-13.5" /><path d="M19.5 7.5l-9 9-4.5-4.5" /></svg>` };
+    function setupGlobalPresence() { const presenceRef = ref(db, `presence/${currentUser.username}`); onDisconnect(presenceRef).set(false); set(presenceRef, true); }
+    function initializeMainApp() { showView('private-chats-list-view'); listenForPrivateChats(); listenForFriendRequests(); listenForUserGroups(); listenForPublicGroups(); setupSettingsViewListeners(); populateCountrySelects(); }
+    navButtons.forEach(btn => btn.addEventListener('click', () => { navButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active'); showView(btn.dataset.view); }));
+    function showView(viewId) { contentViews.forEach(v => v.classList.add('hidden')); document.getElementById(viewId).classList.remove('hidden'); if(viewId === 'settings-view') populateSettingsView(); if (viewId === 'search-view') renderSearchPlaceholder('ابحث عن أصدقاء جدد!', 'user-plus'); }
+    
+    // --- 4. نظام الدردشة الموحد (خاص وكروبات) ---
+    async function openChatDispatcher(chatConfig) {
+        detachChatListeners();
+        activeChat = chatConfig;
+
+        if (activeChat.type === 'private') {
+            const partner = await getUserData(activeChat.id);
+            if (!partner) { showToast('لا يمكن فتح المحادثة، المستخدم غير موجود', 'error'); return; }
+            chatTitle.innerHTML = `<span>${escapeHTML(partner.displayName)}</span> ${getVerifiedBadge(partner.isVerified)}`;
+            const chatId = [currentUser.username, activeChat.id].sort().join('-');
+            set(ref(db, `user_chats/${currentUser.username}/${chatId}/unreadCount`), 0);
+            groupInfoBtn.classList.add('hidden');
+        } else if (activeChat.type === 'group') {
+            const group = await getGroupData(activeChat.id);
+            if (!group) { showToast('لا يمكن فتح الكروب، قد يكون تم حذفه', 'error'); return; }
+            chatTitle.innerHTML = `<span>${escapeHTML(group.name)}</span>`;
+            set(ref(db, `user_groups/${currentUser.username}/${activeChat.id}/unreadCount`), 0);
+            groupInfoBtn.classList.remove('hidden');
+        }
+
+        messagesList.innerHTML = '';
+        chatView.classList.add('active');
+        attachChatListeners();
+    }
+    
+    backToListBtn.addEventListener('click', () => {
+        chatView.classList.remove('active'); 
+        if (activeChat) setTypingStatus(false); 
+        detachChatListeners(); 
+        activeChat = null;
+    });
+
+    function getChatPath() {
+        if (!activeChat) return null;
+        return activeChat.type === 'private'
+            ? `private_chats/${[currentUser.username, activeChat.id].sort().join('-')}/messages`
+            : `group_messages/${activeChat.id}`;
+    }
+
+    function attachChatListeners() {
+        const path = getChatPath(); if (!path) return;
+        const messagesRef = ref(db, path);
+        const q = query(messagesRef, limitToLast(50));
+        activeListeners.msgAdd = { ref: q, event: 'child_added', callback: onChildAdded(q, s => displayMessage(s.val(), s.key)) };
+        activeListeners.msgChange = { ref: messagesRef, event: 'child_changed', callback: onChildChanged(messagesRef, s => updateMessageDisplay(s.key, s.val())) };
+        
+        if (activeChat.type === 'private') {
+            updateUnreadMessages();
+            const typingRef = ref(db, `typing_indicators/${[currentUser.username, activeChat.id].sort().join('-')}/${activeChat.id}`);
+            activeListeners.typing = { ref: typingRef, event: 'value', callback: onValue(typingRef, s => typingIndicator.textContent = s.val() === true ? "يكتب الآن..." : "") };
+        } else if (activeChat.type === 'group') {
+            const groupRef = ref(db, `groups/${activeChat.id}`);
+            activeListeners.groupData = { ref: groupRef, event: 'value', callback: onValue(groupRef, async (snap) => {
+                const groupData = snap.val();
+                if (!groupData) { showToast("تم حذف هذا الكروب", "error"); backToListBtn.click(); return; }
+                currentGroupDataCache[activeChat.id] = { id: activeChat.id, ...groupData };
+                chatTitle.innerHTML = `<span>${escapeHTML(groupData.name)}</span>`;
+                // Pinned Message Logic
+                pinnedMessageBar.classList.add('hidden');
+                if (groupData.pinnedMessageId) {
+                    const msgSnap = await get(ref(db, `group_messages/${activeChat.id}/${groupData.pinnedMessageId}`));
+                    if (msgSnap.exists()) {
+                        const msgData = msgSnap.val();
+                        pinnedMessageBar.innerHTML = `<svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg> <span>${escapeHTML(msgData.senderName)}: ${escapeHTML(msgData.text)}</span>`;
+                        pinnedMessageBar.classList.remove('hidden');
+                    }
+                }
+            })};
+        }
+    }
+
+    async function sendMessage() {
+        const text = messageInput.value.trim();
+        if (!text || !activeChat) return;
+        const chatPath = getChatPath();
+        const bannedWordsSnap = await get(ref(db, 'system/settings/bannedWords'));
+        const bannedWords = bannedWordsSnap.exists() ? Object.keys(bannedWordsSnap.val()) : [];
+        let isFlagged = bannedWords.some(word => text.toLowerCase().includes(word.toLowerCase()));
+
+        const messageData = { senderId: currentUser.username, senderName: currentUser.displayName, text, status: 'sent', timestamp: serverTimestamp(), isFlagged };
+        messageInput.value = ''; sendButton.classList.remove('has-text');
+        setTypingStatus(false);
+        
+        await push(ref(db, chatPath), messageData);
+        
+        // Update last message metadata
+        const updates = {};
+        if (activeChat.type === 'private') {
+            const chatId = [currentUser.username, activeChat.id].sort().join('-');
+            updates[`user_chats/${currentUser.username}/${chatId}/lastMessageText`] = text;
+            updates[`user_chats/${currentUser.username}/${chatId}/lastMessageTimestamp`] = serverTimestamp();
+            updates[`user_chats/${activeChat.id}/${chatId}/lastMessageText`] = text;
+            updates[`user_chats/${activeChat.id}/${chatId}/lastMessageTimestamp`] = serverTimestamp();
+            updates[`user_chats/${activeChat.id}/${chatId}/unreadCount`] = increment(1);
+        } else if (activeChat.type === 'group') {
+            updates[`groups/${activeChat.id}/lastMessageText`] = text;
+            updates[`groups/${activeChat.id}/lastMessageTimestamp`] = serverTimestamp();
+            const membersSnap = await get(ref(db, `group_members/${activeChat.id}`));
+            if (membersSnap.exists()) {
+                membersSnap.forEach(memberSnap => {
+                    const memberId = memberSnap.key;
+                    updates[`user_groups/${memberId}/${activeChat.id}/lastMessageText`] = text;
+                    updates[`user_groups/${memberId}/${activeChat.id}/lastMessageTimestamp`] = serverTimestamp();
+                    if (memberId !== currentUser.username) {
+                        updates[`user_groups/${memberId}/${activeChat.id}/unreadCount`] = increment(1);
+                    }
+                });
+            }
+        }
+        await update(ref(db), updates);
+
+        if (isFlagged) { /* ... reporting logic ... */ }
+    }
+    
+    async function deleteMessage(messageId, type = 'my') {
+        if (type === 'my' && !confirm("هل أنت متأكد من حذف هذه الرسالة للجميع؟")) return;
+        if (type === 'admin' && !confirm("بصفتك مشرف، هل تريد حذف هذه الرسالة؟")) return;
+        update(ref(db, `${getChatPath()}/${messageId}`), { text: "تم حذف هذه الرسالة", isDeleted: true, senderName: "" });
+    }
+
+    async function pinMessage(messageId) {
+        if(!activeChat || activeChat.type !== 'group') return;
+        if (!confirm("هل تريد تثبيت هذه الرسالة في أعلى الكروب؟")) return;
+        await update(ref(db, `groups/${activeChat.id}`), { pinnedMessageId: messageId });
+        showToast("تم تثبيت الرسالة بنجاح", "success");
+    }
+
+    function displayMessage(data, id) {
+        if (!data || document.querySelector(`[data-message-id="${id}"]`)) return;
+        const isMyMsg = data.senderId === currentUser.username;
+        const el = document.createElement('div');
+        el.className = `message ${isMyMsg ? 'my-message' : 'other-message'}`;
+        el.dataset.messageId = id;
+        el.dataset.senderId = data.senderId;
+        if (data.isDeleted) el.classList.add('deleted');
+        if (data.isFlagged) el.classList.add('flagged');
+
+        const senderNameHTML = activeChat.type === 'group' && !isMyMsg && data.senderName ? `<div class="sender-name">${escapeHTML(data.senderName)}</div>` : '';
+        const time = data.timestamp ? new Date(data.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+        
+        let messageActionsHTML = '<div class="message-actions">';
+        if (isMyMsg && !data.isDeleted) {
+            messageActionsHTML += `<button class="delete-btn" data-id="${id}" title="حذف"><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
+        }
+        if (activeChat.type === 'group' && !data.isDeleted) {
+            messageActionsHTML += `<button class="pin-btn" data-id="${id}" title="تثبيت"><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg></button>`;
+        }
+        messageActionsHTML += '</div>';
+
+        el.innerHTML = `
+            ${messageActionsHTML}
+            ${senderNameHTML}
+            <div class="message-content">
+                <div class="message-text">${escapeHTML(data.text)}</div>
+                <div class="message-meta">
+                    <span>${time}</span>
+                    ${isMyMsg ? `<span class="message-status">${data.status === 'read' ? statusIcons.read : statusIcons.sent}</span>` : ''}
+                </div>
+            </div>`;
+        
+        messagesList.appendChild(el);
+        if (isMyMsg && !data.isDeleted) {
+            el.querySelector('.delete-btn')?.addEventListener('click', (e) => deleteMessage(e.currentTarget.dataset.id, 'my'));
+        }
+        el.querySelector('.pin-btn')?.addEventListener('click', (e) => pinMessage(e.currentTarget.dataset.id));
+        messagesList.scrollTop = messagesList.scrollHeight;
+    }
+
+    function detachChatListeners() { Object.keys(activeListeners).forEach(key => { if (key.startsWith('msg') || key.startsWith('typing') || key.startsWith('groupData')) { const l = activeListeners[key]; if (l && l.ref) off(l.ref, l.event, l.callback); delete activeListeners[key]; } }); }
+    function updateUnreadMessages() { const path = getChatPath(); if (!path || activeChat.type !== 'private') return; get(query(ref(db, path), limitToLast(50))).then(s => { if (!s.exists()) return; s.forEach(c => { if (c.val().senderId !== currentUser.username && c.val().status !== 'read') { update(ref(db, `${path}/${c.key}`), { status: 'read' }); } }); }); }
+    messageInput.addEventListener('input', () => { sendButton.classList.toggle('has-text', messageInput.value.trim() !== ''); if (!activeChat) return; clearTimeout(typingTimeout); setTypingStatus(true); typingTimeout = setTimeout(() => setTypingStatus(false), 2000); });
+    function setTypingStatus(isTyping) { if (!activeChat || activeChat.type !== 'private') return; const typingRef = ref(db, `typing_indicators/${[currentUser.username, activeChat.id].sort().join('-')}/${currentUser.username}`); if (isTyping) set(typingRef, true); else onDisconnect(typingRef).remove().then(() => ref(db, `typing_indicators/${[currentUser.username, activeChat.id].sort().join('-')}/${currentUser.username}`).remove()); }
+    sendButton.addEventListener('click', sendMessage); messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+    // --- 5. نظام الأصدقاء والبحث ---
+    searchUserForm.addEventListener('submit', async e => { e.preventDefault(); const searchUsername = document.getElementById('search-username-input').value.trim(); searchResults.innerHTML = `<div class="loader"></div>`; if (!searchUsername) { renderSearchPlaceholder('الرجاء إدخال اسم للبحث عنه.', 'ban'); return; } const usersRef = ref(db, 'users'); const q = query(usersRef, orderByChild('displayName'), equalTo(searchUsername), limitToLast(1)); const usersSnap = await get(q); if (!usersSnap.exists()) { renderSearchPlaceholder(`لم يتم العثور على مستخدم بالاسم "${searchUsername}"`, 'search-off'); return; } let userData = null; let userId = null; usersSnap.forEach(snap => { userId = snap.key; userData = snap.val(); }); if (userId === currentUser.username) { renderSearchPlaceholder('لا يمكنك البحث عن نفسك.', 'ban'); return; } const partnerId = userId; const areFriendsSnapshot = await get(ref(db, `user_chats/${currentUser.username}/${[currentUser.username, partnerId].sort().join('-')}`)); const requestSentSnapshot = await get(ref(db, `friend_requests/${partnerId}/${currentUser.username}`)); const requestReceivedSnapshot = await get(ref(db, `friend_requests/${currentUser.username}/${partnerId}`)); let actionHtml = ''; if (areFriendsSnapshot.exists()) actionHtml = `<span>صديق بالفعل</span>`; else if (requestSentSnapshot.exists()) actionHtml = `<span>تم إرسال الطلب</span>`; else if (requestReceivedSnapshot.exists()) actionHtml = `<span>لديك طلب صداقة منه</span>`; else actionHtml = `<button class="send-request-btn" data-id="${partnerId}" data-name="${userData.displayName}">إرسال طلب</button>`; searchResults.innerHTML = `<div class="search-result-item"><div class="result-content"><div class="avatar">${escapeHTML(userData.displayName.charAt(0).toUpperCase())}</div><div class="user-info"><span class="display-name">${escapeHTML(userData.displayName)} ${getVerifiedBadge(userData.isVerified)}</span><span class="username">@${partnerId.substring(0,10)}...</span></div><div class="result-action">${actionHtml}</div></div></div>`; const sendBtn = searchResults.querySelector('button.send-request-btn'); if (sendBtn) sendBtn.addEventListener('click', sendFriendRequest); });
+    function renderSearchPlaceholder(message, icon) { const icons = { 'user-plus': `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>`, 'ban': `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>`, 'search-off': `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10l-4 4m4-4l4 4"></path></svg>`, }; searchResults.innerHTML = `<div class="search-placeholder">${icons[icon] || icons['user-plus']}<p>${escapeHTML(message)}</p></div>`; }
+    function sendFriendRequest(e) { const targetId = e.target.dataset.id, targetName = e.target.dataset.name; set(ref(db, `friend_requests/${targetId}/${currentUser.username}`), { senderName: currentUser.displayName, senderId: currentUser.username, timestamp: serverTimestamp() }).then(() => { showToast(`تم إرسال طلب الصداقة إلى ${targetName}`, "success"); e.target.parentElement.innerHTML = '<span>تم الإرسال</span>'; }); }
+    function listenForFriendRequests() { const requestsRef = ref(db, `friend_requests/${currentUser.username}`); activeListeners.requestsAdd = { ref: requestsRef, event: 'child_added', callback: onChildAdded(requestsRef, s => displayFriendRequest(s.key, s.val())) }; activeListeners.requestsRemove = { ref: requestsRef, event: 'child_removed', callback: onChildRemoved(requestsRef, s => document.getElementById(`request-${s.key}`)?.remove()) }; }
+    async function displayFriendRequest(senderId, requestData) { const sender = await getUserData(senderId); if(!sender) return; const li = document.createElement('li'); li.className = 'request-item'; li.id = `request-${senderId}`; li.innerHTML = `<span class="list-item-content">${escapeHTML(sender.displayName)} ${getVerifiedBadge(sender.isVerified)}</span><div class="request-actions"><button class="accept-btn" data-id="${senderId}" data-name="${sender.displayName}">قبول</button><button class="decline-btn" data-id="${senderId}">رفض</button></div>`; friendRequestsList.prepend(li); li.querySelector('.accept-btn').addEventListener('click', acceptFriendRequest); li.querySelector('.decline-btn').addEventListener('click', declineFriendRequest); }
+    async function acceptFriendRequest(e) { const partnerId = e.target.dataset.id, partnerName = e.target.dataset.name; const chatId = [currentUser.username, partnerId].sort().join('-'); const partnerData = await getUserData(partnerId); const updates = {}; updates[`user_chats/${currentUser.username}/${chatId}`] = { partnerId, partnerName, unreadCount: 0, lastMessageTimestamp: serverTimestamp() }; updates[`user_chats/${partnerId}/${chatId}`] = { partnerId: currentUser.username, partnerName: currentUser.displayName, unreadCount: 0, lastMessageTimestamp: serverTimestamp() }; updates[`friend_requests/${currentUser.username}/${partnerId}`] = null; await update(ref(db), updates); showToast(`لقد أصبحت صديقًا لـ ${partnerName}`, "success"); }
+    function declineFriendRequest(e) { const senderId = e.target.dataset.id; set(ref(db, `friend_requests/${currentUser.username}/${senderId}`), null); showToast("تم رفض الطلب.", "success"); }
+    function listenForPrivateChats() { const chatsRef = query(ref(db, `user_chats/${currentUser.username}`), orderByChild('lastMessageTimestamp')); if(activeListeners.chatList) off(activeListeners.chatList.ref, 'value', activeListeners.chatList.callback); activeListeners.chatList = { ref: chatsRef, event: 'value', callback: onValue(chatsRef, async (snapshot) => { noPrivateChatsPlaceholder.style.display = snapshot.exists() ? 'none' : 'list-item'; privateChatsList.innerHTML = ''; if (snapshot.exists()) { const chatsData = snapshot.val(); const sortedChats = Object.entries(chatsData).sort(([, a], [, b]) => (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0)); for (const [chatId, chatData] of sortedChats) { if (!chatData || !chatData.partnerId) continue; const partner = await getUserData(chatData.partnerId); if (!partner) continue; const li = document.createElement('li'); li.className = 'list-item'; li.id = `private-chat-${partner.id}`; li.addEventListener('click', () => openChatDispatcher({type: 'private', id: partner.id})); const unreadBadge = chatData.unreadCount > 0 ? `<span class="unread-badge">${chatData.unreadCount}</span>` : ''; const lastMessage = chatData.lastMessageText ? escapeHTML(chatData.lastMessageText) : 'ابدأ المحادثة الآن!'; li.innerHTML = `<div class="avatar">${escapeHTML(partner.displayName.charAt(0).toUpperCase())}</div><div class="list-item-details"><div class="list-item-name">${escapeHTML(partner.displayName)} ${getVerifiedBadge(partner.isVerified)}</div><div class="list-item-last-msg">${lastMessage}</div></div><div class="list-item-extra"><div id="presence-${partner.id}" class="online-indicator"></div>${unreadBadge}</div>`; privateChatsList.appendChild(li); onValue(ref(db, `presence/${partner.id}`), pSnap => { const indicator = document.getElementById(`presence-${partner.id}`); if(indicator) indicator.classList.toggle('online', pSnap.val() === true); }); } } })}; }
+    
+    // --- 6. نظام الكروبات ---
+    function populateCountrySelects() {
+        const selects = [createGroupCountrySelect, filterCountry];
+        selects.forEach(select => {
+            if(!select) return;
+            if(select.options.length > 1) return; // Populate only once
+            for(const [code, name] of Object.entries(ARAB_COUNTRIES)) {
+                select.innerHTML += `<option value="${code}">${name}</option>`;
+            }
+        });
+    }
+
+    createGroupBtn.addEventListener('click', () => createGroupModal.classList.remove('hidden'));
+    cancelCreateGroupBtn.addEventListener('click', () => createGroupModal.classList.add('hidden'));
+
+    createGroupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('create-group-name').value.trim();
+        const desc = document.getElementById('create-group-desc').value.trim();
+        const country = createGroupCountrySelect.value;
+        const type = createGroupForm.querySelector('input[name="groupType"]:checked').value;
+
+        if (!name || !country) { showToast("الرجاء ملء اسم الكروب والدولة.", "error"); return; }
+        
+        let groupId;
+        if (type === 'public') {
+            groupId = push(ref(db, 'groups')).key;
+        } else {
+            let isUnique = false;
+            while (!isUnique) {
+                groupId = `+${Math.floor(10000 + Math.random() * 90000)}`;
+                const groupRef = ref(db, `groups/${groupId}`);
+                if (!(await get(groupRef)).exists()) isUnique = true;
+            }
+        }
+
+        const groupData = { name, description: desc, country, type, ownerId: currentUser.username, createdAt: serverTimestamp(), memberCount: 1, lastMessageTimestamp: serverTimestamp() };
+        const updates = {};
+        updates[`groups/${groupId}`] = groupData;
+        updates[`group_members/${groupId}/${currentUser.username}`] = { role: 'owner', joinedAt: serverTimestamp() };
+        updates[`user_groups/${currentUser.username}/${groupId}`] = { groupName: name, groupType: type, unreadCount: 0, lastMessageTimestamp: serverTimestamp() };
+        
+        await update(ref(db), updates);
+        showToast("تم إنشاء الكروب بنجاح!", "success");
+        createGroupModal.classList.add('hidden');
+        createGroupForm.reset();
+        openChatDispatcher({type: 'group', id: groupId});
+    });
+
+    function listenForUserGroups() {
+        const userGroupsRef = query(ref(db, `user_groups/${currentUser.username}`), orderByChild('lastMessageTimestamp'));
+        onValue(userGroupsRef, async (snap) => {
+            myGroupsList.innerHTML = '';
+            noGroupsPlaceholder.style.display = snap.exists() ? 'none' : 'block';
+            if (!snap.exists()) return;
+            const groups = [];
+            snap.forEach(childSnap => { groups.push({ id: childSnap.key, ...childSnap.val() }); });
+            groups.reverse(); // To show latest first
+            for (const group of groups) {
+                const groupData = await getGroupData(group.id);
+                if (!groupData) continue;
+                const li = document.createElement('li');
+                li.className = 'list-item';
+                li.addEventListener('click', () => openChatDispatcher({type: 'group', id: group.id}));
+                const unreadBadge = group.unreadCount > 0 ? `<span class="unread-badge">${group.unreadCount}</span>` : '';
+                const lastMessage = group.lastMessageText ? escapeHTML(group.lastMessageText) : `تم إنشاء الكروب`;
+                const typeIcon = groupData.type === 'private' ? '🔒' : '🔓';
+
+                li.innerHTML = `
+                    <div class="avatar" style="font-size: 24px;">${typeIcon}</div>
+                    <div class="list-item-details">
+                        <div class="list-item-name">${escapeHTML(groupData.name)}</div>
+                        <div class="list-item-last-msg">${lastMessage}</div>
+                    </div>
+                    <div class="list-item-extra">${unreadBadge}</div>`;
+                myGroupsList.appendChild(li);
+            }
+        });
+    }
+
+    [filterCountry, filterSort].forEach(el => el.addEventListener('change', listenForPublicGroups));
+    
+    function listenForPublicGroups() {
+        let groupsQuery = query(ref(db, 'groups'), orderByChild('type'), equalTo('public'));
+        onValue(groupsQuery, (snap) => {
+            publicGroupsList.innerHTML = '<div class="loader"></div>';
+            if (!snap.exists()) { publicGroupsList.innerHTML = '<li>لا توجد كروبات عامة حاليًا.</li>'; return; }
+            
+            let groups = [];
+            snap.forEach(childSnap => { groups.push({ id: childSnap.key, ...childSnap.val() }); });
+
+            // Client-side filtering
+            const countryFilter = filterCountry.value;
+            const sortFilter = filterSort.value;
+            if (countryFilter) {
+                groups = groups.filter(g => g.country === countryFilter);
+            }
+            if (sortFilter === 'newest') {
+                groups.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            } else if (sortFilter === 'members') {
+                groups.sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
+            }
+
+            publicGroupsList.innerHTML = '';
+            if(groups.length === 0) { publicGroupsList.innerHTML = '<li>لا توجد نتائج تطابق الفلتر.</li>'; return; }
+            
+            groups.forEach(group => {
+                const li = document.createElement('li');
+                li.className = 'group-item';
+                li.innerHTML = `
+                    <div class="group-item-info">
+                        <div class="group-item-name">🔓 ${escapeHTML(group.name)}</div>
+                        <div class="group-item-desc">${escapeHTML(group.description || 'لا يوجد وصف')}</div>
+                    </div>
+                    <div class="group-item-meta">
+                        <span><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A10.004 10.004 0 0012 13a10.004 10.004 0 007-4.197"/></svg> ${group.memberCount || 0}</span>
+                        <span>${ARAB_COUNTRIES[group.country] || group.country}</span>
+                    </div>`;
+                li.addEventListener('click', () => {
+                    if (confirm(`هل تريد الانضمام إلى كروب "${group.name}" العام؟`)) {
+                        joinPublicGroup(group.id, group.name);
+                    }
+                });
+                publicGroupsList.appendChild(li);
+            });
+        });
+    }
+
+    async function joinPublicGroup(groupId, groupName) {
+        const memberRef = ref(db, `group_members/${groupId}/${currentUser.username}`);
+        if ((await get(memberRef)).exists()) {
+            showToast("أنت عضو بالفعل في هذا الكروب", "info");
+            openChatDispatcher({type: 'group', id: groupId});
+            return;
+        }
+
+        const updates = {};
+        updates[`group_members/${groupId}/${currentUser.username}`] = { role: 'member', joinedAt: serverTimestamp() };
+        updates[`user_groups/${currentUser.username}/${groupId}`] = { groupName, groupType: 'public', unreadCount: 0, lastMessageTimestamp: serverTimestamp() };
+        updates[`groups/${groupId}/memberCount`] = increment(1);
+        
+        await update(ref(db), updates);
+        showToast(`تم الانضمام إلى كروب "${groupName}" بنجاح`, "success");
+        openChatDispatcher({type: 'group', id: groupId});
+    }
+    
+    joinPrivateGroupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const groupId = document.getElementById('private-group-id-input').value.trim();
+        if (!groupId.startsWith('+')) { showToast("صيغة ID غير صحيحة, يجب أن تبدأ بـ +", "error"); return; }
+        
+        const group = await getGroupData(groupId);
+        if (!group) { showToast("الكروب غير موجود", "error"); return; }
+        if (group.type === 'public') { showToast("هذا الكروب عام, يمكنك الانضمام من قائمة الكروبات العامة", "info"); return; }
+
+        const banSnap = await get(ref(db, `group_bans/${groupId}/${currentUser.username}`));
+        if (banSnap.exists()) {
+             showToast("أنت محظور من هذا الكروب.", "error"); return;
+        }
+
+        const memberSnap = await get(ref(db, `group_members/${groupId}/${currentUser.username}`));
+        if(memberSnap.exists()) {
+             showToast("أنت بالفعل عضو في هذا الكروب.", "info"); return;
+        }
+        
+        const requestData = { userName: currentUser.displayName, timestamp: serverTimestamp() };
+        await set(ref(db, `group_join_requests/${groupId}/${currentUser.username}`), requestData);
+        showToast("تم إرسال طلب الانضمام بنجاح. انتظر موافقة المشرف.", "success");
+        e.target.reset();
+    });
+
+    // Group Info & Management
+    groupInfoBtn.addEventListener('click', () => { if(activeChat && activeChat.type === 'group') { openGroupInfo(activeChat.id); }});
+    groupInfoView.querySelector('#back-to-chat-btn').addEventListener('click', () => groupInfoView.classList.remove('active'));
+    
+    async function openGroupInfo(groupId) {
+        groupInfoView.classList.add('active');
+        groupInfoDetails.innerHTML = '<div class="loader"></div>';
+        groupMembersList.innerHTML = '';
+        groupJoinRequestsList.innerHTML = '';
+        
+        const group = await getGroupData(groupId);
+        if (!group) { groupInfoView.classList.remove('active'); showToast("الكروب غير موجود", "error"); return; }
+        
+        const myRoleSnap = await get(ref(db, `group_members/${groupId}/${currentUser.username}`));
+        const myRole = myRoleSnap.exists() ? myRoleSnap.val().role : null;
+        if (!myRole) { groupInfoView.classList.remove('active'); showToast("أنت لست عضواً في هذا الكروب", "error"); return; }
+
+        groupInfoTitle.textContent = group.name;
+        const typeIcon = group.type === 'private' ? '🔒' : '🔓';
+        groupInfoDetails.innerHTML = `
+            <div class="settings-list">
+                <div class="settings-item"><span>الاسم</span><span class="value">${typeIcon} ${escapeHTML(group.name)}</span></div>
+                ${group.type === 'private' ? `<div class="settings-item"><span>ID</span><span class="value">${group.id}</span></div>` : ''}
+                <div class="settings-item"><span>الوصف</span><span class="value" style="white-space: pre-wrap;">${escapeHTML(group.description || 'لا يوجد')}</span></div>
+                <div class="settings-item"><span>الدولة</span><span class="value">${ARAB_COUNTRIES[group.country]}</span></div>
+                <div class="settings-item"><span>المالك</span><span class="value">@${group.ownerId.substring(0,10)}...</span></div>
+            </div>`;
+        
+        deleteGroupBtn.classList.toggle('hidden', myRole !== 'owner');
+        leaveGroupBtn.onclick = () => leaveGroup(groupId, group.name);
+        deleteGroupBtn.onclick = () => deleteGroup(groupId, group.name);
+
+        populateGroupMembers(groupId, myRole);
+        if (group.type === 'private' && (myRole === 'owner' || myRole === 'admin')) {
+            populateGroupJoinRequests(groupId, group.name);
+        } else {
+            groupJoinRequestsSection.classList.add('hidden');
+        }
+    }
+
+    async function populateGroupMembers(groupId, myRole) {
+        const membersSnap = await get(ref(db, `group_members/${groupId}`));
+        groupMembersList.innerHTML = '';
+        groupMembersTitle.textContent = `الأعضاء (${membersSnap.size})`;
+        if(!membersSnap.exists()) return;
+
+        for (const memberSnap of Object.entries(membersSnap.val())) {
+            const [memberId, memberData] = memberSnap;
+            const user = await getUserData(memberId);
+            if (!user) continue;
+
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            const roleText = { owner: 'مالك', admin: 'مشرف', member: 'عضو' };
+            
+            let actions = '';
+            if (myRole === 'owner' && memberId !== currentUser.username) {
+                actions = `<div class="member-actions">
+                    <button class="kick-btn" data-id="${memberId}" data-name="${user.displayName}">طرد</button>
+                    ${memberData.role === 'admin' 
+                        ? `<button class="demote-btn btn-secondary" data-id="${memberId}">إزالة الإشراف</button>`
+                        : `<button class="promote-btn" data-id="${memberId}">ترقية لمشرف</button>`
+                    }
+                </div>`;
+            } else if (myRole === 'admin' && memberData.role === 'member' && memberId !== currentUser.username) {
+                 actions = `<div class="member-actions"><button class="kick-btn" data-id="${memberId}" data-name="${user.displayName}">طرد</button></div>`;
+            }
+
+            li.innerHTML = `
+                <div class="avatar">${user.displayName.charAt(0).toUpperCase()}</div>
+                <div class="user-info">
+                    <span class="display-name">${escapeHTML(user.displayName)} ${getVerifiedBadge(user.isVerified)}</span>
+                    <span class="username">@${user.id.substring(0,10)}...</span>
+                </div>
+                <span class="member-role ${memberData.role}">${roleText[memberData.role]}</span>
+                ${actions}`;
+            groupMembersList.appendChild(li);
+        }
+        groupMembersList.querySelectorAll('.kick-btn').forEach(b => b.onclick = (e) => kickMember(groupId, e.currentTarget.dataset.id, e.currentTarget.dataset.name));
+        groupMembersList.querySelectorAll('.promote-btn').forEach(b => b.onclick = (e) => setMemberRole(groupId, e.currentTarget.dataset.id, 'admin'));
+        groupMembersList.querySelectorAll('.demote-btn').forEach(b => b.onclick = (e) => setMemberRole(groupId, e.currentTarget.dataset.id, 'member'));
+    }
+
+    async function populateGroupJoinRequests(groupId, groupName) {
+        const requestsRef = ref(db, `group_join_requests/${groupId}`);
+        onValue(requestsRef, (snap) => {
+            groupJoinRequestsSection.classList.toggle('hidden', !snap.exists());
+            groupJoinRequestsList.innerHTML = '';
+            if (!snap.exists()) return;
+
+            snap.forEach(reqSnap => {
+                const userId = reqSnap.key;
+                const reqData = reqSnap.val();
+                const li = document.createElement('li');
+                li.className = 'request-item';
+                li.innerHTML = `
+                    <span class="list-item-content">طلب انضمام من <b>${escapeHTML(reqData.userName)}</b> (@${userId.substring(0,10)}...)</span>
+                    <div class="request-actions">
+                        <button class="accept-btn" data-id="${userId}" data-name="${reqData.userName}">قبول</button>
+                        <button class="decline-btn" data-id="${userId}">رفض</button>
+                    </div>`;
+                li.querySelector('.accept-btn').onclick = (e) => acceptJoinRequest(groupId, groupName, e.currentTarget.dataset.id, e.currentTarget.dataset.name);
+                li.querySelector('.decline-btn').onclick = (e) => declineJoinRequest(groupId, e.currentTarget.dataset.id);
+                groupJoinRequestsList.prepend(li);
+            });
+        });
+    }
+
+    async function acceptJoinRequest(groupId, groupName, userId, userName) {
+        const updates = {};
+        updates[`group_members/${groupId}/${userId}`] = { role: 'member', joinedAt: serverTimestamp() };
+        updates[`user_groups/${userId}/${groupId}`] = { groupName, groupType: 'private', unreadCount: 0, lastMessageTimestamp: serverTimestamp() };
+        updates[`group_join_requests/${groupId}/${userId}`] = null;
+        updates[`groups/${groupId}/memberCount`] = increment(1);
+        updates[`system/notifications/${userId}/${push(ref(db)).key}`] = {
+            type: 'GROUP_JOIN_ACCEPTED',
+            message: `تم قبول طلب انضمامك إلى كروب "${groupName}"`,
+            timestamp: serverTimestamp(),
+            read: false
+        };
+        await update(ref(db), updates);
+        showToast(`تم قبول ${userName}`, "success");
+    }
+
+    async function declineJoinRequest(groupId, userId) {
+        await set(ref(db, `group_join_requests/${groupId}/${userId}`), null);
+        showToast("تم رفض الطلب", "success");
+    }
+
+    async function kickMember(groupId, userId, userName) {
+        if (!confirm(`هل أنت متأكد من طرد ${userName} من الكروب؟ يمكنك حظره أيضاً.`)) return;
+        const shouldBan = confirm("اضغط 'موافق' لحظر هذا المستخدم من الانضمام مجدداً, أو 'إلغاء' للطرد فقط.");
+
+        const updates = {};
+        updates[`group_members/${groupId}/${userId}`] = null;
+        updates[`user_groups/${userId}/${groupId}`] = null;
+        updates[`groups/${groupId}/memberCount`] = increment(-1);
+        if (shouldBan) {
+            updates[`group_bans/${groupId}/${userId}`] = true;
+        }
+        updates[`system/notifications/${userId}/${push(ref(db)).key}`] = {
+            type: 'GROUP_KICK',
+            message: `تم طردك من كروب "${(await getGroupData(groupId)).name}"`,
+            timestamp: serverTimestamp(), read: false
+        };
+        await update(ref(db), updates);
+        showToast(`تم طرد ${userName}`, "success");
+        populateGroupMembers(groupId, 'owner'); // Re-populate
+    }
+
+    async function setMemberRole(groupId, userId, newRole) {
+        const group = await getGroupData(groupId);
+        const roleText = newRole === 'admin' ? 'مشرف' : 'عضو';
+        if (!confirm(`هل تريد تعيين هذا العضو كـ "${roleText}"؟`)) return;
+        await update(ref(db, `group_members/${groupId}/${userId}`), { role: newRole });
+        
+        const notificationMessage = newRole === 'admin' 
+            ? `تمت ترقيتك إلى مشرف في كروب "${group.name}"`
+            : `تمت إزالة صلاحيات الإشراف عنك في كروب "${group.name}"`;
+
+        const updates = {};
+        updates[`system/notifications/${userId}/${push(ref(db)).key}`] = {
+            type: 'GROUP_ROLE_CHANGED', message: notificationMessage,
+            timestamp: serverTimestamp(), read: false
+        };
+        await update(ref(db), updates);
+        
+        showToast("تم تحديث الدور بنجاح", "success");
+        populateGroupMembers(groupId, 'owner'); // Re-populate
+    }
+
+    async function leaveGroup(groupId, groupName) {
+        if (!confirm(`هل أنت متأكد من مغادرة كروب "${groupName}"؟`)) return;
+        const updates = {};
+        updates[`group_members/${groupId}/${currentUser.username}`] = null;
+        updates[`user_groups/${currentUser.username}/${groupId}`] = null;
+        updates[`groups/${groupId}/memberCount`] = increment(-1);
+        await update(ref(db), updates);
+        showToast("لقد غادرت الكروب", "success");
+        groupInfoView.classList.remove('active');
+        backToListBtn.click();
+    }
+
+    async function deleteGroup(groupId, groupName) {
+        if (prompt(`لحذف كروب "${groupName}" نهائياً، اكتب 'حذف':`) !== 'حذف') {
+             showToast("تم إلغاء الحذف", "info"); return;
+        }
+        showToast("جاري حذف الكروب...", "info");
+        const updates = {};
+        updates[`groups/${groupId}`] = null;
+        updates[`group_messages/${groupId}`] = null;
+        updates[`group_join_requests/${groupId}`] = null;
+        updates[`group_bans/${groupId}`] = null;
+        
+        const membersSnap = await get(ref(db, `group_members/${groupId}`));
+        if (membersSnap.exists()) {
+            membersSnap.forEach(memberSnap => {
+                updates[`user_groups/${memberSnap.key}/${groupId}`] = null;
+            });
+        }
+        updates[`group_members/${groupId}`] = null;
+        await update(ref(db), updates);
+        showToast("تم حذف الكروب بنجاح", "success");
+        groupInfoView.classList.remove('active');
+        backToListBtn.click();
+    }
+
+
+    // --- 7. الإعدادات والإشعارات العامة ---
+    function populateSettingsView() { if (!currentUser) return; settingUsername.textContent = currentUser.username; settingDisplayName.innerHTML = `<span>${currentUser.displayName}</span> ${getVerifiedBadge(currentUser.isVerified)}`; populateFriendsForUnfriending(); }
+    function setupSettingsViewListeners() { editDisplayNameBtn.addEventListener('click', () => { displayNameContainer.querySelector('.settings-item').classList.add('hidden'); editDisplayNameForm.classList.remove('hidden'); newDisplayNameInput.value = currentUser.displayName; newDisplayNameInput.focus(); }); cancelEditDisplayName.addEventListener('click', () => { displayNameContainer.querySelector('.settings-item').classList.remove('hidden'); editDisplayNameForm.classList.add('hidden'); }); editDisplayNameForm.addEventListener('submit', async(e) => { e.preventDefault(); const newName = newDisplayNameInput.value.trim(); if (newName && newName !== currentUser.displayName) { await update(ref(db, `users/${currentUser.username}`), { displayName: newName }); push(ref(db, 'system/live_activity'), { type: 'NAME_CHANGE', message: `غيّر ${currentUser.displayName} اسمه إلى ${newName}`, timestamp: serverTimestamp() }); } cancelEditDisplayName.click(); }); deleteAccountBtn.addEventListener('click', () => { const conf = prompt("للتأكيد، اكتب 'حذف':"); if (conf === 'حذف') deleteUserAccount(); else showToast("تم إلغاء عملية الحذف.", "error"); }); }
+    async function populateFriendsForUnfriending() { friendsManagementList.innerHTML = '<li><em>جاري التحميل...</em></li>'; const s = await get(ref(db, `user_chats/${currentUser.username}`)); if (s.exists() && s.size > 0) { friendsManagementList.innerHTML = ''; const friendPromises = []; Object.values(s.val()).forEach(chat => friendPromises.push(getUserData(chat.partnerId))); const friends = await Promise.all(friendPromises); friends.forEach(friend => { if (friend) { const li = document.createElement('li'); li.className = 'friend-item'; li.innerHTML = `<span class="list-item-content">${escapeHTML(friend.displayName)} ${getVerifiedBadge(friend.isVerified)}</span><button class="remove-btn" data-id="${friend.id}">إزالة</button>`; li.querySelector('.remove-btn').addEventListener('click', unfriendUser); friendsManagementList.appendChild(li); } }); } else { friendsManagementList.innerHTML = '<li style="padding: 15px; text-align:center;"><em>لا يوجد أصدقاء حاليًا.</em></li>'; } }
+    async function unfriendUser(e) { const friendId = e.target.dataset.id; if (!confirm(`هل أنت متأكد من إزالة هذا الصديق؟`)) return; const chatId = [currentUser.username, friendId].sort().join('-'); const updates = {}; updates[`user_chats/${currentUser.username}/${chatId}`] = null; updates[`user_chats/${friendId}/${chatId}`] = null; await update(ref(db), updates); showToast("تمت إزالة الصديق بنجاح.", "success"); }
+    async function deleteUserAccount() { if (!currentUser) return; showToast("جاري حذف حسابك...", "success"); try { const userId = currentUser.username; const updates = {}; const userChatsSnapshot = await get(ref(db, `user_chats/${userId}`)); if (userChatsSnapshot.exists()) { userChatsSnapshot.forEach(chatSnapshot => { const chatId = chatSnapshot.key; if(chatSnapshot.val()){ const partnerId = chatSnapshot.val().partnerId; updates[`user_chats/${partnerId}/${chatId}`] = null; updates[`private_chats/${chatId}`] = null; } }); } updates[`users/${userId}`] = null; updates[`presence/${userId}`] = null; updates[`user_chats/${userId}`] = null; updates[`friend_requests/${userId}`] = null; const allRequestsSnapshot = await get(ref(db, 'friend_requests')); if (allRequestsSnapshot.exists()) { allRequestsSnapshot.forEach(recipientSnapshot => { if (recipientSnapshot.hasChild(userId)) { updates[`friend_requests/${recipientSnapshot.key}/${userId}`] = null; } }); } await update(ref(db), updates); showToast("تم حذف حسابك بنجاح.", "success"); setTimeout(() => forceLogout("تم حذف الحساب بنجاح."), 1500); } catch (error) { showToast("حدث خطأ أثناء حذف الحساب.", "error"); } }
+    function showToast(message, type = "info", duration = 3000) { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.innerHTML = message; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); toast.addEventListener('transitionend', () => toast.remove()); }, duration); }
+    function escapeHTML(str) { return str ? str.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '' }
+
+    function listenForAppNotifications() {
+        const notificationsRef = query(ref(db, `system/notifications/${currentUser.username}`), limitToLast(10));
+        onChildAdded(notificationsRef, (snap) => {
+            const notif = snap.val();
+            if (notif && !notif.read) {
+                showToast(`🔔 ${notif.message}`, 'info', 5000);
+                update(ref(db, `system/notifications/${currentUser.username}/${snap.key}`), { read: true });
+            }
+        });
+    }
+
+</script>
+</body>
+</html>
