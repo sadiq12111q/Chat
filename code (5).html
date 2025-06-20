@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>منصة دردشة احترافية</title>
+    <style>
+        /* --- 1. الإعدادات الأساسية والمتغيرات --- */
+        :root {
+            --primary-color: #6A5ACD; /* SlateBlue */
+            --secondary-color: #7B68EE; /* MediumSlateBlue */
+            --accent-color: #00C9A7; /* Vibrant Teal/Green */
+            --danger-color: #E94560;
+            --read-receipt-color: #00C9A7;
+            --background-color: #F4F6FC;
+            --chat-bg-color: #EAEBEE;
+            --my-message-bg: linear-gradient(135deg, #6A5ACD, #7B68EE);
+            --other-message-bg: #FFFFFF;
+            --text-color: #2c3e50;
+            --light-text-color: #8a99ab;
+            --white-color: #FFFFFF;
+            --border-color: #e1e5ea;
+            --deleted-message-color: #95a5a6;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        html { height: -webkit-fill-available; }
+        
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            background-color: var(--primary-color);
+            color: var(--text-color); 
+            height: 100vh;
+            height: 100svh; /* More robust for mobile */
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .hidden { display: none !important; }
+        .icon { width: 24px; height: 24px; stroke-width: 2; }
+        .icon-sm { width: 16px; height: 16px; stroke-width: 2.5; }
+        .icon-btn { background:none; border:none; cursor:pointer; padding: 4px; color: var(--light-text-color); display:flex; align-items:center; }
+        .icon-btn:hover { color: var(--primary-color); }
+        .btn-secondary {
+            background: var(--background-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .btn-primary {
+             background-color: var(--primary-color);
+             color: var(--white-color);
+             border: none;
+        }
+
+
+        /* --- حاوية التطبيق الرئيسية --- */
+        #app-wrapper { 
+            width: 100%; 
+            height: 100%; 
+            max-width: 450px; /* Optimal for mobile view */
+            background: var(--background-color); 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+            position: relative;
+        }
+        @media (min-width: 451px) { 
+            #app-wrapper { max-height: 90vh; border-radius: 20px; } 
+        }
+
+        /* --- 2. واجهة المصادقة (Auth) --- */
+        #auth-view { 
+            width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            padding: 20px; background: var(--background-color); color: var(--text-color); 
+        }
+        .auth-box { 
+            background: var(--white-color); padding: 40px 30px; border-radius: 16px; box-shadow: var(--card-shadow);
+            width: 100%; max-width: 350px; 
+        }
+        .auth-box h2 { text-align: center; margin-bottom: 25px; color: var(--primary-color); font-size: 24px; }
+        .auth-form input { 
+            width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border-color); 
+            font-size: 16px; font-family: 'Tajawal'; background: var(--background-color);
+        }
+        .auth-form input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.2); }
+        .auth-form button { 
+            width: 100%; padding: 14px; border: none; border-radius: 10px; background-color: var(--primary-color); 
+            color: var(--white-color); font-size: 18px; font-weight: 700; cursor: pointer; transition: background-color 0.3s, transform 0.2s; 
+        }
+        .auth-form button:hover { background-color: var(--secondary-color); }
+        .auth-form button:active { transform: scale(0.98); }
+        .auth-toggle { text-align: center; margin-top: 20px; font-size: 14px; }
+        .auth-toggle a { color: var(--primary-color); text-decoration: none; cursor: pointer; font-weight: 700; }
+        .auth-error { color: var(--danger-color); text-align: center; margin-bottom: 15px; font-size: 14px; min-height: 20px; font-weight: 500;}
+
+        /* --- 3. الواجهة الرئيسية --- */
+        #main-app-view { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        
+        #app-header { 
+            display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--white-color); 
+            color: var(--primary-color); flex-shrink: 0; box-shadow: var(--header-shadow); z-index: 10;
+        }
+        #welcome-message { font-size: 18px; font-weight: 700; }
+        #logout-btn { background: none; border: none; color: var(--light-text-color); cursor: pointer; padding: 5px; }
+        #logout-btn:hover { color: var(--primary-color); }
+
+        #app-content { flex-grow: 1; overflow-y: auto; padding: 20px 15px; padding-bottom: 90px; }
+
+        .list-view h3, .list-view h4 { 
+            margin-bottom: 15px; padding-right: 5px; color: var(--primary-color); font-size: 20px; font-weight: 700;
+        }
+        .list-view ul { list-style: none; }
+        
+        .list-item, .request-item, .friend-item, .search-result-item {
+            display: flex; align-items: center; padding: 15px; border-radius: 12px; margin-bottom: 12px; background: var(--white-color);
+            box-shadow: var(--card-shadow); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .list-item:active, .search-result-item:active { transform: scale(0.98); }
+        .list-item-content { flex-grow: 1; font-weight: 500; font-size: 16px; }
+
+        .online-indicator { 
+            width: 12px; height: 12px; background-color: var(--light-text-color); border-radius: 50%; margin-left: 15px;
+            transition: background-color 0.3s; border: 2px solid var(--background-color);
+        }
+        .online-indicator.online { background-color: var(--accent-color); }
+        
+        #no-private-chats-placeholder { text-align: center; padding: 40px 20px; color: var(--light-text-color); background: transparent; box-shadow: none; }
+        
+        #app-nav { 
+            position: absolute; bottom: 0; right: 0; left: 0; display: flex; background-color: var(--white-color); 
+            flex-shrink: 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.07); padding: 10px 0;
+            border-top-right-radius: 20px; border-top-left-radius: 20px;
+        }
+        .nav-btn { 
+            flex-grow: 1; padding: 8px 5px; text-align: center; cursor: pointer; border: none; background: none; color: var(--light-text-color);
+            transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 500;
+        }
+        .nav-btn.active { color: var(--primary-color); transform: translateY(-3px); }
+        .nav-btn.active .icon { stroke: var(--primary-color); }
+
+        .form-group {
+            display: flex; flex-direction: column; gap: 15px; padding: 20px; background: var(--white-color);
+            border-radius: 12px; box-shadow: var(--card-shadow); margin-bottom: 20px;
+        }
+        #search-user-form { flex-direction: row; align-items: center; padding: 10px; }
+        .form-group input, #search-username-input {
+            width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;
+            background: var(--background-color); font-family: 'Tajawal';
+        }
+        .form-group button {
+            padding: 12px 15px; border: none; background-color: var(--secondary-color);
+            color: white; border-radius: 8px; cursor: pointer; font-weight: 700;
+        }
+
+        /* --- 4. واجهة الدردشة (تحسينات جديدة) --- */
+        #chat-view { 
+            position: absolute; top: 0; right: 0; width: 100%; height: 100%; background: var(--chat-bg-color); 
+            display: flex; flex-direction: column; transform: translateX(100%); 
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; 
+        }
+        #chat-view.active { transform: translateX(0); }
+        .chat-header { 
+            background-color: var(--white-color); color: var(--text-color); padding: 10px 15px; display: flex; 
+            align-items: center; box-shadow: var(--header-shadow); flex-shrink: 0; gap: 10px;
+        }
+        #back-to-list-btn { background: none; border: none; color: var(--text-color); cursor: pointer; }
+        .chat-title-group { flex-grow: 1; }
+        #chat-title { font-size: 17px; font-weight: 700; }
+        #typing-indicator { font-size: 12px; color: var(--accent-color); height: 16px; font-style: italic; transition: opacity 0.3s; }
+        .messages-list { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; /* تقليل الفجوة لتجميع أفضل */ }
+        .chat-start-info { text-align: center; color: var(--light-text-color); padding: 20px; font-size: 13px; }
+        
+        .message-form-container { 
+            flex-shrink: 0; display: flex; padding: 10px 15px; background-color: var(--white-color); 
+            border-top: 1px solid var(--border-color); align-items: center; box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+        #message-form { width: 100%; display:flex; align-items: center; gap: 10px; }
+        #message-input { 
+            flex-grow: 1; padding: 12px 20px; border: none; border-radius: 25px; 
+            font-size: 16px; background-color: var(--background-color);
+        }
+        #message-input:focus { outline: none; }
+        #send-button { 
+            width: 48px; height: 48px; border: none; background-color: var(--light-text-color); 
+            color: white; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; 
+            align-items: center; flex-shrink: 0; transition: all 0.2s; transform: scale(0.9);
+        }
+        #send-button.has-text { background-color: var(--primary-color); transform: scale(1); }
+        #send-button:active { transform: scale(0.9) !important; }
+
+        .message {
+            max-width: 85%; padding: 10px 15px; border-radius: 20px; display: flex; flex-wrap: wrap; 
+            align-items: flex-end; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-bottom: 2px; /* فجوة صغيرة بين المجموعات */
+            border-left: 4px solid transparent; /* For flagged messages */
+        }
+        .message.flagged { border-left-color: var(--danger-color); }
+        .message.my-message { background: var(--my-message-bg); align-self: flex-end; color: var(--white-color); border-bottom-right-radius: 5px; } 
+        .message.other-message { background-color: var(--other-message-bg); align-self: flex-start; border-bottom-left-radius: 5px; } 
+        
+        /* تجميع الرسائل */
+        .message.consecutive { margin-top: 0; margin-bottom: 0; border-radius: 20px; }
+        .my-message.consecutive { border-top-right-radius: 5px; border-bottom-right-radius: 5px; }
+        .other-message.consecutive { border-top-left-radius: 5px; border-bottom-left-radius: 5px; }
+        
+        .message-text { font-size: 15px; line-height: 1.5; word-wrap: break-word; min-width: 0; }
+        .message.deleted .message-text { color: var(--deleted-message-color); font-style: italic; }
+        .message-meta { 
+            font-size: 11px; color: var(--light-text-color); display: flex; align-items: center; 
+            gap: 4px; margin-right: auto; padding-left: 10px; white-space: nowrap; align-self: flex-end; flex-shrink: 0;
+        }
+        .message.my-message .message-meta { color: rgba(255, 255, 255, 0.8); }
+        .message.my-message .message-status svg { stroke: rgba(255, 255, 255, 0.9); }
+        .message.my-message .message-status svg[style*="var(--read-receipt-color)"] { stroke: var(--read-receipt-color); }
+        .delete-btn { 
+            position: absolute; top: -10px; right: -10px; cursor: pointer; display: none; background: var(--danger-color); 
+            color: white; border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; 
+            border: none; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .message.my-message:not(.deleted):hover .delete-btn { display: flex; }
+
+        /* --- تحسينات واجهة البحث --- */
+        #search-view .form-group { margin-bottom: 15px; }
+        #search-results { min-height: 200px; display: flex; justify-content: center; align-items: center; }
+        .search-placeholder { text-align: center; color: var(--light-text-color); }
+        .search-placeholder svg { width: 60px; height: 60px; margin-bottom: 15px; stroke: var(--border-color); }
+        .search-placeholder p { font-size: 16px; font-weight: 500; }
+        
+        .loader { width: 32px; height: 32px; border: 4px solid var(--background-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .search-result-item { cursor: default; flex-direction: column; align-items: stretch; }
+        .result-content { display: flex; align-items: center; flex-grow: 1; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--secondary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; margin-left: 15px; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-info .display-name { font-weight: 700; font-size: 16px; color: var(--text-color); }
+        .user-info .username { font-size: 14px; color: var(--light-text-color); }
+        .result-action { margin-right: auto; }
+        .result-action button { border: none; padding: 8px 14px; border-radius: 8px; color: white; cursor: pointer; font-weight: 700; font-family: 'Tajawal'; }
+        .result-action .send-request-btn { background-color: var(--accent-color); color: var(--text-color); }
+        .result-action span { color: var(--light-text-color); font-weight: 500; }
+
+        /* --- 5. إشعارات Toast --- */
+        #toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 90%; }
+        .toast { padding: 12px 20px; color: white; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.2); opacity: 0; transform: translateY(20px); transition: all 0.3s; font-weight: 500; text-align: center; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background-color: var(--accent-color); }
+        .toast.error { background-color: var(--danger-color); }
+        
+        /* --- 6. إضافات واجهة الإعدادات المحسّنة --- */
+        .settings-group { margin-bottom: 25px; }
+        .settings-group-title { color: var(--primary-color); font-size: 16px; font-weight: 700; margin-bottom: 10px; padding-right: 5px; }
+        .settings-list { background: var(--white-color); border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--background-color); transition: background-color 0.2s; font-size: 16px; }
+        .settings-item:last-child { border-bottom: none; }
+        .settings-item.clickable { cursor: pointer; }
+        .settings-item.clickable:hover { background-color: #f9f9fb; }
+        .settings-item .value { color: var(--light-text-color); font-weight: 500; }
+        .settings-item.danger { color: var(--danger-color); }
+        .settings-item.danger .icon { stroke: var(--danger-color); }
+        #edit-display-name-form { padding: 15px; border-top: 1px solid var(--background-color); display: flex; gap: 10px; align-items: center; }
+        #edit-display-name-form input { flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--background-color); font-family: 'Tajawal'; }
+        #edit-display-name-form button { padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; }
+        #change-password-section { background: var(--white-color); padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); margin-top: 15px; }
+        #change-password-section h4 { color: var(--primary-color); margin-bottom: 15px; }
+        #change-password-form input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--background-color); font-family: 'Tajawal'; margin-bottom: 10px; }
+        #change-password-form button { width: 100%; padding: 12px; border: none; background-color: var(--secondary-color); color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        #friends-management-list .friend-item { box-shadow: none; padding: 15px; margin-bottom: 0; border-bottom: 1px solid var(--background-color); border-radius: 0; cursor: default; }
+        #friends-management-list .friend-item:last-child { border-bottom: none; }
+
+        /* --- 7. عناصر واجهة المستخدم العامة --- */
+        .request-actions button, .friend-item .remove-btn { border: none; padding: 8px 14px; border-radius: 8px; color: white; cursor: pointer; margin-right: 5px; font-weight: 500; font-family: 'Tajawal'; }
+        .request-actions .accept-btn { background-color: var(--secondary-color); }
+        .request-actions .decline-btn, .friend-item .remove-btn { background-color: var(--danger-color); }
+        .danger-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: var(--danger-color); color: white; font-size: 16px; font-weight: 700; cursor: pointer; transition: background-color 0.3s; }
+        .danger-btn:hover { background-color: #c9302c; }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <!-- 1. واجهة المصادقة -->
+    <div id="auth-view">
+        <div class="auth-box">
+            <form id="login-form" class="auth-form">
+                <h2>تسجيل الدخول</h2>
+                <div id="login-error" class="auth-error"></div>
+                <input type="text" id="login-username" placeholder="اسم المستخدم" required>
+                <input type="password" id="login-password" placeholder="كلمة المرور" required>
+                <button type="submit">دخول</button>
+                <p class="auth-toggle">ليس لديك حساب؟ <a id="show-signup">أنشئ حسابًا</a></p>
+            </form>
+            <form id="signup-form" class="auth-form hidden">
+                <h2>إنشاء حساب جديد</h2>
+                <div id="signup-error" class="auth-error"></div>
+                <input type="text" id="signup-username" placeholder="اسم المستخدم (فريد، بالإنجليزية)" required pattern="[a-zA-Z0-9_]+">
+                <input type="text" id="signup-displayname" placeholder="الاسم الذي سيظهر بالدردشة" required>
+                <input type="password" id="signup-password" placeholder="كلمة المرور" required>
+                <button type="submit">إنشاء</button>
+                <p class="auth-toggle">لديك حساب بالفعل؟ <a id="show-login">سجل الدخول</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. التطبيق الرئيسي -->
+    <div id="main-app-view" class="hidden">
+        <header id="app-header">
+            <span id="welcome-message"></span>
+            <button id="logout-btn" title="تسجيل الخروج">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </header>
+
+        <main id="app-content">
+            <!-- عرض المحادثات -->
+            <div id="private-chats-list-view" class="list-view">
+                <h4>طلبات الصداقة</h4>
+                <ul id="friend-requests-list">
+                    <!-- populated by JS -->
+                </ul>
+                <h3 style="margin-top: 20px;">المحادثات</h3>
+                <ul id="private-chats-list">
+                    <li id="no-private-chats-placeholder">لا توجد محادثات خاصة بعد. ابحث عن أصدقاء!</li>
+                </ul>
+            </div>
+            
+            <!-- عرض البحث (محسّن) -->
+            <div id="search-view" class="list-view hidden">
+                <h3>البحث عن مستخدمين</h3>
+                <form id="search-user-form" class="form-group">
+                    <input type="text" id="search-username-input" placeholder="ابحث باسم المستخدم..." required>
+                    <button type="submit">
+                        <svg class="icon" style="stroke: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </button>
+                </form>
+                <div id="search-results">
+                    <!-- محتوى البحث الديناميكي -->
+                </div>
+            </div>
+
+            <!-- عرض الإعدادات (النسخة المحسنة) -->
+            <div id="settings-view" class="list-view hidden">
+                <h3>الإعدادات</h3>
+                
+                <div class="settings-group">
+                    <h4 class="settings-group-title">الحساب</h4>
+                    <div class="settings-list">
+                        <div class="settings-item">
+                            <span>اسم المستخدم</span>
+                            <span id="setting-username" class="value"></span>
+                        </div>
+                        <div id="display-name-container">
+                            <div class="settings-item">
+                                <span>الاسم الظاهر</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span id="setting-display-name" class="value"></span>
+                                    <button id="edit-display-name-btn" class="icon-btn" title="تعديل">
+                                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <form id="edit-display-name-form" class="hidden">
+                                <input type="text" id="new-display-name-input" required>
+                                <button type="submit" class="btn-primary">حفظ</button>
+                                <button type="button" id="cancel-edit-display-name" class="btn-secondary">إلغاء</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h4 class="settings-group-title">الأمان</h4>
+                    <div class="settings-list">
+                        <div id="toggle-password-form-btn" class="settings-item clickable">
+                            <span>تغيير كلمة المرور</span>
+                            <svg class="icon" style="stroke:var(--light-text-color); transform: rotate(180deg);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                        </div>
+                    </div>
+                    <div id="change-password-section" class="hidden">
+                        <form id="change-password-form">
+                            <input type="password" id="old-password" placeholder="كلمة المرور القديمة" required>
+                            <input type="password" id="new-password" placeholder="كلمة المرور الجديدة" required>
+                            <button type="submit">تحديث كلمة المرور</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h4 class="settings-group-title">إدارة الأصدقاء</h4>
+                    <div class="settings-list">
+                         <ul id="friends-management-list">
+                            <!-- populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h4 class="settings-group-title">منطقة الخطر</h4>
+                    <div class="settings-list">
+                        <div id="delete-account-btn" class="settings-item clickable danger">
+                            <span>حذف الحساب نهائياً</span>
+                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <nav id="app-nav">
+            <button class="nav-btn active" data-view="private-chats-list-view">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <span>الدردشات</span>
+            </button>
+            <button class="nav-btn" data-view="search-view">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <span>بحث</span>
+            </button>
+            <button class="nav-btn" data-view="settings-view">
+                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span>الإعدادات</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- واجهة الدردشة (محسّنة) -->
+    <div id="chat-view">
+        <header class="chat-header">
+            <button id="back-to-list-btn">
+                <svg class="icon" style="transform: rotate(180deg);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <div class="chat-title-group">
+                <h2 id="chat-title"></h2>
+                <div id="typing-indicator"></div>
+            </div>
+        </header>
+        <main class="messages-list" id="messages-list"></main>
+        <footer class="message-form-container">
+            <form id="message-form" onsubmit="return false;">
+                <input type="text" id="message-input" placeholder="اكتب رسالتك..." autocomplete="off">
+                <button type="button" id="send-button">
+                     <svg class="icon" style="transform: rotate(-45deg); margin-left: -3px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+    
+    <div id="toast-container"></div>
+</div>
+
+<script type="module">
+    // --- 1. تهيئة FIREBASE ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getDatabase, ref, get, set, update, push, onChildAdded, onChildChanged, onValue, off, onDisconnect, serverTimestamp, query, limitToLast, onChildRemoved } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPQInwJ5Ifm2urgQsSNzK7ZpKTaxSmutY",
+      authDomain: "chat-app-b4ae1.firebaseapp.com",
+      databaseURL: "https://chat-app-b4ae1-default-rtdb.firebaseio.com",
+      projectId: "chat-app-b4ae1",
+      storageBucket: "chat-app-b4ae1.firebasestorage.app",
+      messagingSenderId: "358771246997",
+      appId: "1:358771246997:web:9cfdabf18b7348fc10989c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // =========================================================================
+    // ==== [جديد] التحقق من وضع الصيانة عند بدء التشغيل ===========================
+    // =========================================================================
+    onValue(ref(db, 'system/settings/maintenanceMode'), (snapshot) => {
+        if (snapshot.val() === true) {
+            document.body.innerHTML = `<div style="text-align:center; padding:40px; color:#fff; background-color:#34495e; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;"><h1>التطبيق تحت الصيانة</h1><p>نحن نقوم ببعض التحسينات، سنعود قريبًا.</p></div>`;
+        }
+    }, { onlyOnce: true });
+
+    // --- 2. إدارة حالة التطبيق وعناصر الواجهة ---
+    let currentUser = null, activeChat = null, typingTimeout = null;
+    let activeListeners = {}; 
+
+    const statusIcons = {
+        sent: `<svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`,
+        read: `<svg class="icon-sm" style="stroke: var(--read-receipt-color);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.5l-9 9-4.5-4.5" /></svg>`
+    };
+    
+    const authView = document.getElementById('auth-view');
+    const mainAppView = document.getElementById('main-app-view');
+    const chatView = document.getElementById('chat-view');
+    const loginForm = document.getElementById('login-form'), signupForm = document.getElementById('signup-form');
+    const loginError = document.getElementById('login-error'), signupError = document.getElementById('signup-error');
+    const welcomeMessage = document.getElementById('welcome-message'), logoutBtn = document.getElementById('logout-btn');
+    const navButtons = document.querySelectorAll('.nav-btn'), contentViews = document.querySelectorAll('#app-content > .list-view');
+    const privateChatsList = document.getElementById('private-chats-list');
+    const searchUserForm = document.getElementById('search-user-form'), searchResults = document.getElementById('search-results');
+    const backToListBtn = document.getElementById('back-to-list-btn'), chatTitle = document.getElementById('chat-title');
+    const typingIndicator = document.getElementById('typing-indicator'), messagesList = document.getElementById('messages-list');
+    const messageForm = document.getElementById('message-form'), messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const friendRequestsList = document.getElementById('friend-requests-list');
+    const noPrivateChatsPlaceholder = document.getElementById('no-private-chats-placeholder');
+    
+    const settingUsername = document.getElementById('setting-username');
+    const settingDisplayName = document.getElementById('setting-display-name');
+    const editDisplayNameBtn = document.getElementById('edit-display-name-btn');
+    const editDisplayNameForm = document.getElementById('edit-display-name-form');
+    const newDisplayNameInput = document.getElementById('new-display-name-input');
+    const cancelEditDisplayName = document.getElementById('cancel-edit-display-name');
+    const displayNameContainer = document.getElementById('display-name-container');
+    const togglePasswordFormBtn = document.getElementById('toggle-password-form-btn');
+    const changePasswordSection = document.getElementById('change-password-section');
+    const changePasswordForm = document.getElementById('change-password-form');
+    const friendsManagementList = document.getElementById('friends-management-list');
+    const deleteAccountBtn = document.getElementById('delete-account-btn');
+
+    // --- 3. نظام المصادقة والإعدادات ---
+    document.getElementById('show-signup').addEventListener('click', () => { signupForm.classList.remove('hidden'); loginForm.classList.add('hidden'); });
+    document.getElementById('show-login').addEventListener('click', () => { loginForm.classList.remove('hidden'); signupForm.classList.add('hidden'); });
+    
+    // =========================================================================
+    // ==== [محدّث] تعديل دالة إنشاء الحساب لتسجيل وقت الإنشاء والنشاط ========
+    // =========================================================================
+    signupForm.addEventListener('submit', async e => {
+        e.preventDefault(); signupError.textContent = '';
+        const username = document.getElementById('signup-username').value.trim().toLowerCase();
+        const displayName = document.getElementById('signup-displayname').value.trim();
+        const password = document.getElementById('signup-password').value;
+        if (!username || !displayName || !password) { signupError.textContent = 'الرجاء ملء جميع الحقول.'; return; }
+
+        const userRef = ref(db, 'users/' + username);
+        if ((await get(userRef)).exists()) { 
+            signupError.textContent = 'اسم المستخدم هذا محجوز.'; 
+        } else { 
+            const userData = { 
+                displayName, 
+                password, 
+                createdAt: serverTimestamp() // <-- [جديد] لتتبع تاريخ التسجيل
+            };
+            await set(userRef, userData); 
+            
+            // [جديد] تسجيل الحدث في سجل النشاط الحي للوحة التحكم
+            push(ref(db, 'system/live_activity'), {
+                type: 'NEW_USER',
+                message: `مستخدم جديد انضم: ${displayName} (@${username})`,
+                timestamp: serverTimestamp()
+            });
+
+            loginSuccess({ username, ...userData }); 
+        }
+    });
+
+    loginForm.addEventListener('submit', async e => {
+        e.preventDefault(); loginError.textContent = '';
+        const username = document.getElementById('login-username').value.trim().toLowerCase();
+        const password = document.getElementById('login-password').value;
+        const userRef = ref(db, 'users/' + username);
+        const snapshot = await get(userRef);
+
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            // [جديد] التحقق إذا كان المستخدم محظورًا
+            if (userData.isBanned === true) {
+                loginError.textContent = 'هذا الحساب محظور.';
+                return;
+            }
+            if (userData.password === password) {
+                loginSuccess({ username, ...userData });
+            } else {
+                loginError.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+            }
+        } else { 
+            loginError.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.'; 
+        }
+    });
+
+    function loginSuccess(userData) {
+        currentUser = userData;
+        localStorage.setItem('chatUser', JSON.stringify(currentUser));
+        authView.classList.add('hidden'); mainAppView.classList.remove('hidden');
+        welcomeMessage.textContent = `أهلاً، ${currentUser.displayName}`;
+        initializeMainApp(); setupGlobalPresence();
+    }
+    
+    logoutBtn.addEventListener('click', () => {
+        if(currentUser) set(ref(db, `presence/${currentUser.username}`), false);
+        currentUser = null; localStorage.removeItem('chatUser');
+        Object.values(activeListeners).forEach(l => { if(l && l.ref) off(l.ref, l.event, l.callback) });
+        activeListeners = {};
+        location.reload();
+    });
+
+    window.addEventListener('load', () => {
+        const savedUser = localStorage.getItem('chatUser');
+        if (savedUser) loginSuccess(JSON.parse(savedUser));
+    });
+
+    function setupGlobalPresence() {
+        const presenceRef = ref(db, `presence/${currentUser.username}`);
+        const userStatus = {
+            online: true,
+            last_changed: serverTimestamp(),
+        };
+        onDisconnect(presenceRef).set(false);
+        set(presenceRef, true);
+    }
+    
+    // --- 4. إدارة الواجهة الرئيسية والدردشة ---
+    function initializeMainApp() {
+        showView('private-chats-list-view'); 
+        listenForPrivateChats();
+        listenForFriendRequests();
+        setupSettingsViewListeners();
+    }
+
+    navButtons.forEach(btn => btn.addEventListener('click', () => {
+        navButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active');
+        const viewId = btn.dataset.view;
+        showView(viewId);
+    }));
+
+    function showView(viewId) { 
+        contentViews.forEach(v => v.classList.add('hidden')); 
+        const view = document.getElementById(viewId);
+        view.classList.remove('hidden'); 
+        if(viewId === 'settings-view') {
+            populateSettingsView();
+        }
+        if (viewId === 'search-view') {
+            renderSearchPlaceholder('ابحث عن أصدقاء جدد!', 'user-plus');
+        }
+    }
+    
+    function openChat(chatConfig) {
+        detachChatListeners();
+        activeChat = chatConfig; 
+        chatTitle.textContent = activeChat.name;
+        messagesList.innerHTML = `<div class="chat-start-info">هذه هي بداية محادثتك مع ${escapeHTML(activeChat.name)}</div>`; 
+        chatView.classList.add('active');
+        attachChatListeners();
+    }
+    
+    backToListBtn.addEventListener('click', () => {
+        chatView.classList.remove('active');
+        if (activeChat) setTypingStatus(false);
+        detachChatListeners();
+        activeChat = null;
+    });
+
+    // --- 5. منطق البحث وطلبات الصداقة (محسّن) ---
+    searchUserForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const searchUsername = document.getElementById('search-username-input').value.trim().toLowerCase();
+        
+        searchResults.innerHTML = `<div class="loader"></div>`;
+
+        if (!searchUsername || searchUsername === currentUser.username) {
+            renderSearchPlaceholder('لا يمكنك البحث عن نفسك.', 'ban');
+            return;
+        }
+        
+        const userSnapshot = await get(ref(db, 'users/' + searchUsername));
+        if (!userSnapshot.exists()) {
+            renderSearchPlaceholder(`لم يتم العثور على المستخدم "${searchUsername}"`, 'search-off');
+            return;
+        }
+
+        const userData = userSnapshot.val();
+        const partnerId = userSnapshot.key;
+        
+        const areFriendsSnapshot = await get(ref(db, `user_chats/${currentUser.username}/${[currentUser.username, partnerId].sort().join('-')}`));
+        const requestSentSnapshot = await get(ref(db, `friend_requests/${partnerId}/${currentUser.username}`));
+        const requestReceivedSnapshot = await get(ref(db, `friend_requests/${currentUser.username}/${partnerId}`));
+
+        let actionHtml = '';
+        if (areFriendsSnapshot.exists()) actionHtml = `<span>صديق بالفعل</span>`;
+        else if (requestSentSnapshot.exists()) actionHtml = `<span>تم إرسال الطلب</span>`;
+        else if (requestReceivedSnapshot.exists()) actionHtml = `<span>لديك طلب صداقة منه</span>`;
+        else actionHtml = `<button class="send-request-btn" data-id="${partnerId}" data-name="${userData.displayName}">إرسال طلب</button>`;
+        
+        searchResults.innerHTML = `
+            <div class="search-result-item">
+                <div class="result-content">
+                    <div class="avatar">${escapeHTML(userData.displayName.charAt(0).toUpperCase())}</div>
+                    <div class="user-info">
+                        <span class="display-name">${escapeHTML(userData.displayName)}</span>
+                        <span class="username">@${partnerId}</span>
+                    </div>
+                    <div class="result-action">${actionHtml}</div>
+                </div>
+            </div>`;
+
+        const sendBtn = searchResults.querySelector('button.send-request-btn');
+        if (sendBtn) sendBtn.addEventListener('click', sendFriendRequest);
+    });
+
+    function renderSearchPlaceholder(message, icon) {
+        const icons = {
+            'user-plus': `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>`,
+            'ban': `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>`,
+            'search-off': `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10l-4 4m4-4l4 4"></path></svg>`,
+        };
+        searchResults.innerHTML = `
+            <div class="search-placeholder">
+                ${icons[icon] || icons['user-plus']}
+                <p>${escapeHTML(message)}</p>
+            </div>`;
+    }
+    
+    function sendFriendRequest(e) {
+        const targetId = e.target.dataset.id, targetName = e.target.dataset.name;
+        const requestRef = ref(db, `friend_requests/${targetId}/${currentUser.username}`);
+        set(requestRef, { senderName: currentUser.displayName, timestamp: serverTimestamp() })
+            .then(() => {
+                showToast(`تم إرسال طلب الصداقة إلى ${targetName}`, "success");
+                e.target.parentElement.innerHTML = '<span>تم الإرسال</span>';
+            });
+    }
+
+    function listenForFriendRequests() {
+        const requestsRef = ref(db, `friend_requests/${currentUser.username}`);
+        onChildAdded(requestsRef, s => displayFriendRequest(s.key, s.val()));
+        onChildRemoved(requestsRef, s => document.getElementById(`request-${s.key}`)?.remove());
+    }
+
+    function displayFriendRequest(senderId, requestData) {
+        const li = document.createElement('li');
+        li.className = 'request-item'; li.id = `request-${senderId}`;
+        li.innerHTML = `
+            <span class="list-item-content">${escapeHTML(requestData.senderName)}</span>
+            <div class="request-actions">
+                <button class="accept-btn" data-id="${senderId}" data-name="${requestData.senderName}">قبول</button>
+                <button class="decline-btn" data-id="${senderId}">رفض</button>
+            </div>`;
+        friendRequestsList.prepend(li);
+        li.querySelector('.accept-btn').addEventListener('click', acceptFriendRequest);
+        li.querySelector('.decline-btn').addEventListener('click', declineFriendRequest);
+    }
+
+    async function acceptFriendRequest(e) {
+        const partnerId = e.target.dataset.id, partnerName = e.target.dataset.name;
+        const chatId = [currentUser.username, partnerId].sort().join('-');
+        const updates = {};
+        updates[`user_chats/${currentUser.username}/${chatId}`] = { partnerId, partnerName };
+        updates[`user_chats/${partnerId}/${chatId}`] = { partnerId: currentUser.username, partnerName: currentUser.displayName };
+        updates[`friend_requests/${currentUser.username}/${partnerId}`] = null;
+        await update(ref(db), updates);
+        showToast(`لقد أصبحت صديقًا لـ ${partnerName}`, "success");
+    }
+
+    function declineFriendRequest(e) {
+        const senderId = e.target.dataset.id;
+        set(ref(db, `friend_requests/${currentUser.username}/${senderId}`), null);
+        showToast("تم رفض الطلب.", "success");
+    }
+
+    // --- 6. منطق الدردشة (محسّن) ---
+    function listenForPrivateChats() {
+        const chatsRef = ref(db, `user_chats/${currentUser.username}`);
+        if(activeListeners.chatAdded) off(activeListeners.chatAdded.ref, 'child_added', activeListeners.chatAdded.callback);
+        if(activeListeners.chatRemoved) off(activeListeners.chatRemoved.ref, 'child_removed', activeListeners.chatRemoved.callback);
+        
+        const checkEmptyList = () => { noPrivateChatsPlaceholder.style.display = privateChatsList.children.length > 1 ? 'none' : 'list-item'; };
+        checkEmptyList();
+
+        activeListeners.chatAdded = { ref: chatsRef, event: 'child_added', callback: onChildAdded(chatsRef, (snapshot) => {
+            const chatData = snapshot.val(); if (!chatData) return;
+            noPrivateChatsPlaceholder.style.display = 'none';
+            const li = document.createElement('li'); li.className = 'list-item';
+            li.id = `private-chat-${chatData.partnerId}`;
+            li.innerHTML = `<div class="list-item-content">${escapeHTML(chatData.partnerName)}</div><div id="presence-${chatData.partnerId}" class="online-indicator"></div>`;
+            li.addEventListener('click', () => openChat({type: 'private', id: chatData.partnerId, name: `${chatData.partnerName}`}));
+            privateChatsList.appendChild(li);
+            const presenceRef = ref(db, `presence/${chatData.partnerId}`);
+            onValue(presenceRef, presenceSnap => {
+                const indicator = document.getElementById(`presence-${chatData.partnerId}`);
+                if(indicator) indicator.classList.toggle('online', presenceSnap.val() === true);
+            });
+        })};
+
+        activeListeners.chatRemoved = { ref: chatsRef, event: 'child_removed', callback: onChildRemoved(chatsRef, (snapshot) => {
+            const partnerId = snapshot.val()?.partnerId;
+            if (partnerId) document.getElementById(`private-chat-${partnerId}`)?.remove();
+            checkEmptyList();
+            if (document.getElementById('settings-view').offsetParent !== null) populateFriendsForUnfriending();
+        })};
+    }
+    
+    function getChatPath() {
+        if (!activeChat) return null;
+        const ids = [currentUser.username, activeChat.id].sort();
+        return `private_chats/${ids.join('-')}/messages`;
+    }
+
+    function attachChatListeners() {
+        const path = getChatPath(); if (!path) return;
+        const messagesRef = ref(db, path);
+        const q = query(messagesRef, limitToLast(50));
+        activeListeners.msgAdd = { ref: q, event: 'child_added', callback: onChildAdded(q, s => displayMessage(s.val(), s.key)) };
+        activeListeners.msgChange = { ref: messagesRef, event: 'child_changed', callback: onChildChanged(messagesRef, s => updateMessageDisplay(s.key, s.val())) };
+        updateUnreadMessages();
+        const partnerId = activeChat.id;
+        const chatId = [currentUser.username, partnerId].sort().join('-');
+        const typingRef = ref(db, `typing_indicators/${chatId}/${partnerId}`);
+        activeListeners.typing = { ref: typingRef, event: 'value', callback: onValue(typingRef, s => typingIndicator.textContent = s.val() === true ? "يكتب الآن..." : "") };
+    }
+
+    function detachChatListeners() {
+        Object.keys(activeListeners).forEach(key => {
+            if (key.startsWith('msg') || key.startsWith('typing')) {
+                const l = activeListeners[key];
+                if (l && l.ref) off(l.ref, l.event, l.callback);
+                delete activeListeners[key];
+            }
+        });
+    }
+    
+    // =========================================================================
+    // ==== [محدّث] دالة إرسال الرسائل مع فلتر الكلمات وتعليم الرسائل ==========
+    // =========================================================================
+    async function sendMessage() {
+        const text = messageInput.value.trim();
+        if (!text || !activeChat) return;
+
+        // [جديد] جلب الكلمات الممنوعة للفلترة
+        const bannedWordsSnap = await get(ref(db, 'system/settings/bannedWords'));
+        const bannedWords = bannedWordsSnap.exists() ? Object.keys(bannedWordsSnap.val()) : [];
+        
+        let isFlagged = false;
+        for (const word of bannedWords) {
+            if (text.toLowerCase().includes(word.toLowerCase())) {
+                isFlagged = true;
+                break;
+            }
+        }
+
+        const messageData = {
+            senderId: currentUser.username, 
+            senderName: currentUser.displayName,
+            text, 
+            status: 'sent', 
+            timestamp: serverTimestamp(),
+            isFlagged: isFlagged // <-- [جديد] إضافة علامة إذا كانت الرسالة مخالفة
+        };
+
+        // مسح النص من حقل الإدخال فورًا
+        messageInput.value = '';
+        sendButton.classList.remove('has-text');
+        setTypingStatus(false);
+
+        await push(ref(db, getChatPath()), messageData);
+
+        // [جديد] إرسال إبلاغ تلقائي للمشرف إذا كانت الرسالة مخالفة
+        if (isFlagged) {
+             push(ref(db, 'system/reports'), {
+                type: 'FLAGGED_MESSAGE',
+                reporterId: 'SYSTEM',
+                reportedUserId: currentUser.username,
+                messageText: text,
+                chatId: [currentUser.username, activeChat.id].sort().join('-'),
+                timestamp: serverTimestamp()
+            });
+        }
+    }
+    
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); 
+            sendMessage();
+        }
+    });
+
+    function deleteMessage(messageId) {
+        if (!confirm("هل أنت متأكد من حذف هذه الرسالة للجميع؟")) return;
+        update(ref(db, `${getChatPath()}/${messageId}`), { text: "تم حذف هذه الرسالة", isDeleted: true });
+    }
+    
+    function displayMessage(data, id) {
+        if (!data) return;
+
+        const lastMessageEl = messagesList.querySelector('.message:last-of-type');
+        const isConsecutive = lastMessageEl && lastMessageEl.dataset.senderId === data.senderId && !lastMessageEl.classList.contains('deleted');
+
+        if(isConsecutive){
+            lastMessageEl.classList.add('consecutive');
+        }
+
+        const el = document.createElement('div'); el.className = 'message'; el.dataset.messageId = id;
+        el.dataset.senderId = data.senderId;
+
+        const isMyMsg = data.senderId === currentUser.username;
+        el.classList.add(isMyMsg ? 'my-message' : 'other-message');
+        if (data.isDeleted) el.classList.add('deleted');
+        if (data.isFlagged) el.classList.add('flagged'); // [جديد] تطبيق ستايل للرسالة المخالفة
+
+        const time = data.timestamp ? new Date(data.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+        el.innerHTML = `
+            <div class="message-text">${escapeHTML(data.text)}</div>
+            <div class="message-meta">
+                <span>${time}</span>
+                ${isMyMsg ? `<span class="message-status">${data.status === 'read' ? statusIcons.read : statusIcons.sent}</span>` : ''}
+            </div>
+            ${isMyMsg && !data.isDeleted ? `<button class="delete-btn" data-id="${id}">×</button>` : ''}
+        `;
+        messagesList.appendChild(el);
+        const deleteBtn = el.querySelector('.delete-btn');
+        if (deleteBtn) deleteBtn.addEventListener('click', (e) => deleteMessage(e.target.dataset.id));
+        messagesList.scrollTop = messagesList.scrollHeight;
+    }
+    
+    function updateMessageDisplay(id, data) {
+        const messageEl = document.querySelector(`[data-message-id="${id}"]`); if (!messageEl) return;
+        if (data.senderId === currentUser.username) {
+            const statusEl = messageEl.querySelector('.message-status');
+            if (statusEl && data.status === 'read') statusEl.innerHTML = statusIcons.read;
+        }
+        if (data.isDeleted) {
+            messageEl.classList.add('deleted');
+            messageEl.querySelector('.message-text').innerHTML = `<i>${escapeHTML(data.text)}</i>`;
+            messageEl.querySelector('.delete-btn')?.remove();
+        }
+    }
+    
+    function updateUnreadMessages() {
+        const path = getChatPath(); if (!path) return;
+        get(query(ref(db, path), limitToLast(50))).then(snapshot => {
+            if (!snapshot.exists()) return;
+            snapshot.forEach(child => {
+                if (child.val().senderId !== currentUser.username && child.val().status !== 'read') {
+                    update(ref(db, `${path}/${child.key}`), { status: 'read' });
+                }
+            });
+        });
+    }
+    
+    messageInput.addEventListener('input', () => {
+        sendButton.classList.toggle('has-text', messageInput.value.trim() !== '');
+        if (!activeChat) return; 
+        clearTimeout(typingTimeout); 
+        setTypingStatus(true);
+        typingTimeout = setTimeout(() => setTypingStatus(false), 2000);
+    });
+
+    function setTypingStatus(isTyping) {
+        if (!activeChat) return;
+        const chatId = [currentUser.username, activeChat.id].sort().join('-');
+        const typingRef = ref(db, `typing_indicators/${chatId}/${currentUser.username}`);
+        if (isTyping) set(typingRef, true);
+        else onDisconnect(typingRef).remove().then(() => ref(db, `typing_indicators/${chatId}/${currentUser.username}`).remove());
+    }
+
+    // --- 7. منطق الإعدادات المحسّن ---
+    function populateSettingsView() {
+        if (!currentUser) return;
+        settingUsername.textContent = currentUser.username;
+        settingDisplayName.textContent = currentUser.displayName;
+        populateFriendsForUnfriending();
+    }
+
+    function setupSettingsViewListeners() {
+        editDisplayNameBtn.addEventListener('click', () => {
+            displayNameContainer.querySelector('.settings-item').classList.add('hidden');
+            editDisplayNameForm.classList.remove('hidden');
+            newDisplayNameInput.value = currentUser.displayName;
+            newDisplayNameInput.focus();
+        });
+
+        cancelEditDisplayName.addEventListener('click', () => {
+            displayNameContainer.querySelector('.settings-item').classList.remove('hidden');
+            editDisplayNameForm.classList.add('hidden');
+        });
+
+        editDisplayNameForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newName = newDisplayNameInput.value.trim();
+            if (newName && newName !== currentUser.displayName) {
+                await update(ref(db, `users/${currentUser.username}`), { displayName: newName });
+                currentUser.displayName = newName;
+                localStorage.setItem('chatUser', JSON.stringify(currentUser));
+                welcomeMessage.textContent = `أهلاً، ${newName}`;
+                settingDisplayName.textContent = newName;
+                showToast("تم تحديث الاسم بنجاح.", "success");
+            }
+            cancelEditDisplayName.click();
+        });
+
+        togglePasswordFormBtn.addEventListener('click', () => {
+            changePasswordSection.classList.toggle('hidden');
+        });
+
+        changePasswordForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const oldPass = document.getElementById('old-password').value, newPass = document.getElementById('new-password').value;
+            if (!oldPass || !newPass) { showToast("الرجاء ملء جميع الحقول.", "error"); return; }
+            const snapshot = await get(ref(db, 'users/' + currentUser.username));
+            if (snapshot.exists() && snapshot.val().password === oldPass) {
+                await update(ref(db, 'users/' + currentUser.username), { password: newPass });
+                showToast("تم تغيير كلمة المرور بنجاح", "success"); e.target.reset();
+                changePasswordSection.classList.add('hidden');
+            } else { showToast("كلمة المرور القديمة غير صحيحة", "error"); }
+        });
+
+        deleteAccountBtn.addEventListener('click', () => {
+            const confirmation = prompt("هذا الإجراء سيحذف حسابك وكل بياناتك نهائياً ولا يمكن التراجع عنه. للتأكيد، اكتب 'حذف':");
+            if (confirmation === 'حذف') deleteUserAccount();
+            else showToast("تم إلغاء عملية الحذف.", "error");
+        });
+    }
+
+    async function populateFriendsForUnfriending() {
+        friendsManagementList.innerHTML = '<li><em>جاري التحميل...</em></li>';
+        const snapshot = await get(ref(db, `user_chats/${currentUser.username}`));
+        if (snapshot.exists() && snapshot.size > 0) {
+            friendsManagementList.innerHTML = '';
+            snapshot.forEach(child => {
+                const friend = child.val();
+                if(friend.partnerId) {
+                    const li = document.createElement('li');
+                    li.className = 'friend-item';
+                    li.innerHTML = `
+                        <span>${escapeHTML(friend.partnerName)}</span>
+                        <button class="remove-btn" data-id="${friend.partnerId}">إزالة</button>
+                    `;
+                    li.querySelector('.remove-btn').addEventListener('click', unfriendUser);
+                    friendsManagementList.appendChild(li);
+                }
+            });
+        } else {
+            friendsManagementList.innerHTML = '<li style="padding: 15px; color: var(--light-text-color); text-align:center;"><em>لا يوجد أصدقاء حاليًا.</em></li>';
+        }
+    }
+    
+    async function unfriendUser(e) {
+        const friendId = e.target.dataset.id;
+        if (!confirm(`هل أنت متأكد من إزالة هذا الصديق؟ ستختفي المحادثة من قائمة كلاكما.`)) return;
+        const chatId = [currentUser.username, friendId].sort().join('-');
+        const updates = {};
+        updates[`user_chats/${currentUser.username}/${chatId}`] = null;
+        updates[`user_chats/${friendId}/${chatId}`] = null;
+        await update(ref(db), updates);
+        showToast("تمت إزالة الصديق بنجاح.", "success");
+    }
+
+    async function deleteUserAccount() {
+        if (!currentUser) return;
+        showToast("جاري حذف حسابك...", "success");
+        try {
+            const userId = currentUser.username;
+            const updates = {};
+            const userChatsSnapshot = await get(ref(db, `user_chats/${userId}`));
+            if (userChatsSnapshot.exists()) {
+                userChatsSnapshot.forEach(chatSnapshot => {
+                    const chatId = chatSnapshot.key;
+                    if(chatSnapshot.val()){
+                        const partnerId = chatSnapshot.val().partnerId;
+                        updates[`user_chats/${partnerId}/${chatId}`] = null;
+                        updates[`private_chats/${chatId}`] = null;
+                    }
+                });
+            }
+            updates[`users/${userId}`] = null;
+            updates[`presence/${userId}`] = null;
+            updates[`user_chats/${userId}`] = null;
+            updates[`friend_requests/${userId}`] = null;
+            const allRequestsSnapshot = await get(ref(db, 'friend_requests'));
+            if (allRequestsSnapshot.exists()) {
+                allRequestsSnapshot.forEach(recipientSnapshot => {
+                    if (recipientSnapshot.hasChild(userId)) {
+                        updates[`friend_requests/${recipientSnapshot.key}/${userId}`] = null;
+                    }
+                });
+            }
+            await update(ref(db), updates);
+            showToast("تم حذف حسابك بنجاح.", "success");
+            setTimeout(() => logoutBtn.click(), 1500);
+        } catch (error) {
+            console.error("Error deleting account:", error);
+            showToast("حدث خطأ أثناء حذف الحساب.", "error");
+        }
+    }
+
+    // --- أدوات مساعدة ---
+    function showToast(message, type = "success") {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`; toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.addEventListener('transitionend', () => toast.remove());
+        }, 3000);
+    }
+    function escapeHTML(str) { return str ? str.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '' }
+
+</script>
+</body>
+</html>
