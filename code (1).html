@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>منصة دردشة احترافية</title>
+    <style>
+        /* --- 1. الإعدادات الأساسية والمتغيرات --- */
+        :root {
+            --primary-color: #6A5ACD; /* SlateBlue */
+            --secondary-color: #7B68EE; /* MediumSlateBlue */
+            --accent-color: #00C9A7; /* Vibrant Teal/Green */
+            --danger-color: #E94560;
+            --read-receipt-color: #00C9A7;
+            --background-color: #F4F6FC;
+            --chat-bg-color: #EAEBEE;
+            --my-message-bg: linear-gradient(135deg, #6A5ACD, #7B68EE);
+            --other-message-bg: #FFFFFF;
+            --text-color: #2c3e50;
+            --light-text-color: #8a99ab;
+            --white-color: #FFFFFF;
+            --border-color: #e1e5ea;
+            --deleted-message-color: #95a5a6;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        html { height: -webkit-fill-available; }
+        
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            background-color: var(--primary-color);
+            color: var(--text-color); 
+            height: 100vh;
+            height: 100svh; /* More robust for mobile */
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .hidden { display: none !important; }
+        .icon { width: 24px; height: 24px; stroke-width: 2; }
+        .icon-sm { width: 16px; height: 16px; stroke-width: 2.5; }
+
+        /* --- حاوية التطبيق الرئيسية --- */
+        #app-wrapper { 
+            width: 100%; 
+            height: 100%; 
+            max-width: 450px; /* Optimal for mobile view */
+            background: var(--background-color); 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+            position: relative;
+        }
+        @media (min-width: 451px) { 
+            #app-wrapper { max-height: 90vh; border-radius: 20px; } 
+        }
+
+        /* --- 2. واجهة المصادقة (Auth) --- */
+        #auth-view { 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px; 
+            background: var(--background-color);
+            color: var(--text-color); 
+        }
+        .auth-box { 
+            background: var(--white-color); 
+            padding: 40px 30px; 
+            border-radius: 16px; 
+            box-shadow: var(--card-shadow);
+            width: 100%; 
+            max-width: 350px; 
+            text-align: center;
+        }
+        .auth-box h2 { text-align: center; margin-bottom: 25px; color: var(--primary-color); font-size: 24px; }
+        .auth-form input { 
+            width: 100%; 
+            padding: 14px; 
+            margin-bottom: 15px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border-color); 
+            font-size: 16px; 
+            font-family: 'Tajawal';
+            background: var(--background-color);
+        }
+        .auth-form input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.2);
+        }
+        .auth-form button { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 10px; 
+            background-color: var(--primary-color); 
+            color: var(--white-color); 
+            font-size: 18px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: background-color 0.3s, transform 0.2s; 
+        }
+        .auth-form button:hover { background-color: var(--secondary-color); }
+        .auth-form button:active { transform: scale(0.98); }
+        .auth-error { color: var(--danger-color); text-align: center; margin-bottom: 15px; font-size: 14px; min-height: 20px; font-weight: 500;}
+        
+        /* === START: Google Button Style === */
+        .social-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--white-color);
+            color: var(--text-color);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Tajawal';
+        }
+        .social-btn:hover {
+            background-color: var(--background-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        /* === END: Google Button Style === */
+
+        /* --- 3. الواجهة الرئيسية --- */
+        #main-app-view { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        
+        #app-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px 20px; 
+            background: var(--white-color); 
+            color: var(--primary-color); 
+            flex-shrink: 0;
+            box-shadow: var(--header-shadow);
+            z-index: 10;
+        }
+        #welcome-message { font-size: 18px; font-weight: 700; }
+        #logout-btn { background: none; border: none; color: var(--light-text-color); cursor: pointer; padding: 5px; }
+        #logout-btn:hover { color: var(--primary-color); }
+
+        #app-content { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding: 20px 15px; 
+            padding-bottom: 90px; /* Space for bottom nav */
+        }
+
+        .list-view h3, .list-view h4 { 
+            margin-bottom: 15px;
+            padding-right: 5px; 
+            color: var(--primary-color); 
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .list-view ul { list-style: none; }
+        
+        .list-item, .request-item, .friend-item, .search-result-item {
+            display: flex; 
+            align-items: center; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 12px; 
+            background: var(--white-color); 
+            box-shadow: var(--card-shadow);
+            cursor: pointer; 
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .list-item:active, .search-result-item:active { transform: scale(0.98); }
+        .list-item-content { flex-grow: 1; font-weight: 500; font-size: 16px; }
+
+        .online-indicator { 
+            width: 12px; 
+            height: 12px; 
+            background-color: var(--light-text-color); 
+            border-radius: 50%; 
+            margin-left: 15px; 
+            transition: background-color 0.3s;
+            border: 2px solid var(--background-color);
+        }
+        .online-indicator.online { background-color: var(--accent-color); }
+        
+        #no-private-chats-placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--light-text-color);
+            background: transparent;
+            box-shadow: none;
+        }
+        
+        #app-nav { 
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            display: flex; 
+            background-color: var(--white-color); 
+            flex-shrink: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.07);
+            padding: 10px 0;
+            border-top-right-radius: 20px;
+            border-top-left-radius: 20px;
+        }
+        .nav-btn { 
+            flex-grow: 1; 
+            padding: 8px 5px; 
+            text-align: center; 
+            cursor: pointer; 
+            border: none; 
+            background: none; 
+            color: var(--light-text-color); 
+            transition: all 0.2s; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px; 
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .nav-btn.active { 
+            color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+        .nav-btn.active .icon {
+            stroke: var(--primary-color);
+        }
+
+        .form-group, #change-password-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            background: var(--white-color);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+        #search-user-form { flex-direction: row; align-items: center; padding: 10px; }
+        .form-group input, #search-username-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--background-color);
+            font-family: 'Tajawal';
+        }
+        .form-group button {
+            padding: 12px 15px;
+            border: none;
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        /* --- 4. واجهة الدردشة --- */
+        #chat-view { 
+            position: absolute; top: 0; right: 0; width: 100%; height: 100%; 
+            background: var(--chat-bg-color); 
+            display: flex; flex-direction: column; 
+            transform: translateX(100%); 
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 1000; 
+        }
+        #chat-view.active { transform: translateX(0); }
+        
+        .chat-header { 
+            background-color: var(--white-color); 
+            color: var(--text-color); 
+            padding: 10px 15px; 
+            display: flex; 
+            align-items: center; 
+            box-shadow: var(--header-shadow);
+            flex-shrink: 0; 
+            gap: 10px;
+        }
+        #back-to-list-btn { background: none; border: none; color: var(--text-color); cursor: pointer; }
+        .chat-title-group { flex-grow: 1; }
+        #chat-title { font-size: 17px; font-weight: 700; }
+        #typing-indicator { font-size: 12px; color: var(--accent-color); height: 16px; font-style: italic; transition: opacity 0.3s; }
+        
+        .messages-list { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        .message-form-container { 
+            flex-shrink: 0; 
+            display: flex; 
+            padding: 10px 15px; 
+            background-color: var(--white-color); 
+            border-top: 1px solid var(--border-color); 
+            align-items: center; 
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+        #message-form { width: 100%; display:flex; align-items: center; gap: 10px; }
+        #message-input { 
+            flex-grow: 1; 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 25px; 
+            font-size: 16px;
+            background-color: var(--background-color);
+        }
+        #message-input:focus { outline: none; }
+        #send-button { 
+            width: 48px; height: 48px; border: none; 
+            background-color: var(--primary-color); 
+            color: white; border-radius: 50%; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center; flex-shrink: 0;
+            transition: transform 0.1s;
+        }
+        #send-button:active { transform: scale(0.9); }
+        
+        .message {
+            max-width: 85%;
+            padding: 8px 12px;
+            border-radius: 18px;
+            display: flex;
+            flex-wrap: wrap; 
+            align-items: flex-end; 
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .message.my-message { 
+            background: var(--my-message-bg); 
+            align-self: flex-end; 
+            color: var(--white-color);
+        } 
+        .message.other-message { 
+            background-color: var(--other-message-bg); 
+            align-self: flex-start; 
+        } 
+
+        .message-text { 
+            font-size: 15px;
+            line-height: 1.5;
+            padding-bottom: 0; 
+            word-wrap: break-word; 
+            min-width: 0;
+        }
+        .message.deleted .message-text { 
+            color: var(--deleted-message-color); 
+            font-style: italic; 
+        }
+
+        .message-meta { 
+            position: relative;
+            font-size: 11px; 
+            color: var(--light-text-color); 
+            display: flex; 
+            align-items: center; 
+            gap: 4px;
+            margin-right: auto; 
+            padding-left: 10px; 
+            white-space: nowrap; 
+            align-self: flex-end; 
+            flex-shrink: 0; 
+        }
+        .message.my-message .message-meta { 
+           color: rgba(255, 255, 255, 0.8);
+        }
+        .message.my-message .message-status svg { 
+            stroke: rgba(255, 255, 255, 0.9); 
+        }
+        .message.my-message .message-status svg[style*="var(--read-receipt-color)"] { 
+            stroke: var(--read-receipt-color); 
+        }
+
+        .delete-btn { 
+            position: absolute; top: -10px; right: -10px; cursor: pointer; display: none; 
+            background: var(--danger-color); 
+            color: white; border-radius: 50%; width: 22px; height: 22px; 
+            align-items: center; justify-content: center; border: none; 
+            font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .message.my-message:not(.deleted):hover .delete-btn { display: flex; }
+
+        /* --- 5. إشعارات Toast --- */
+        #toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 90%; }
+        .toast { padding: 12px 20px; color: white; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.2); opacity: 0; transform: translateY(20px); transition: all 0.3s; font-weight: 500; text-align: center; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background-color: var(--accent-color); }
+        .toast.error { background-color: var(--danger-color); }
+        
+        /* --- 6. عناصر إضافية للوضوح --- */
+        .section-card {
+            background: var(--white-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            margin-top: 25px;
+        }
+        .section-card h4 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+        #settings-view .form-group, #settings-view #change-password-form {
+            box-shadow: none; padding: 0;
+        }
+        
+        .request-actions button, .friend-item .remove-btn { 
+            border: none; padding: 8px 14px; border-radius: 8px; color: white; cursor: pointer; margin-right: 5px; font-weight: 500; font-family: 'Tajawal';
+        }
+        .request-actions .accept-btn { background-color: var(--secondary-color); }
+        .request-actions .decline-btn, .friend-item .remove-btn { background-color: var(--danger-color); }
+        #search-results .accept-btn { background-color: var(--accent-color); color: var(--text-color); font-weight: bold; }
+
+        #random-user-result { margin: 20px 0; }
+        #find-random-btn { width: 100%; padding: 14px; font-weight: bold; font-size: 16px; background: var(--primary-color); color: var(--white-color); border: none; border-radius: 10px; box-shadow: var(--card-shadow); }
+
+        .danger-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: var(--danger-color); color: white; font-size: 16px; font-weight: 700; cursor: pointer; transition: background-color 0.3s; }
+        .danger-btn:hover { background-color: #c9302c; }
+        
+        #privacy-settings div { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <!-- 1. واجهة المصادقة (معدلة) -->
+    <div id="auth-view">
+        <div class="auth-box">
+            <h2>أهلاً بك في منصة الدردشة</h2>
+            <p style="color: var(--light-text-color); margin-bottom: 30px;">سجل دخولك للمتابعة</p>
+            
+            <button id="google-signin-btn" class="social-btn">
+                <svg viewBox="0 0 48 48" width="24px" height="24px"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.42-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
+                <span>تسجيل الدخول بواسطة جوجل</span>
+            </button>
+            
+            <!-- تم إخفاء النماذج القديمة لأنها غير آمنة وغير مستخدمة الآن -->
+            <form id="login-form" class="auth-form" style="display: none;"></form>
+            <form id="signup-form" class="auth-form hidden" style="display: none;"></form>
+        </div>
+    </div>
+
+    <!-- 2. التطبيق الرئيسي -->
+    <div id="main-app-view" class="hidden">
+        <header id="app-header">
+            <span id="welcome-message"></span>
+            <button id="logout-btn" title="تسجيل الخروج">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </header>
+
+        <main id="app-content">
+            <!-- عرض المحادثات -->
+            <div id="private-chats-list-view" class="list-view">
+                <h4>طلبات الصداقة</h4>
+                <ul id="friend-requests-list">
+                    <!-- populated by JS -->
+                </ul>
+                <h3 style="margin-top: 20px;">المحادثات</h3>
+                <ul id="private-chats-list">
+                    <li id="no-private-chats-placeholder">لا توجد محادثات خاصة بعد. ابحث عن أصدقاء!</li>
+                </ul>
+            </div>
+            
+            <!-- عرض البحث -->
+            <div id="search-view" class="list-view hidden">
+                <h3>البحث عن مستخدمين</h3>
+                <form id="search-user-form" class="form-group">
+                    <input type="text" id="search-username-input" placeholder="البحث معطل، استخدم المطابقة العشوائية" disabled>
+                    <button type="submit" disabled>
+                        <svg class="icon" style="stroke: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </button>
+                </form>
+                <div id="search-results"></div>
+            </div>
+
+            <!-- عرض المطابقة العشوائية -->
+            <div id="random-match-view" class="list-view hidden">
+                <h3>مطابقة عشوائية</h3>
+                <p style="padding: 0 5px 20px; color: var(--light-text-color);">ابحث عن صديق جديد لبدء محادثة!</p>
+                <button id="find-random-btn">ابحث عن مستخدم</button>
+                <div id="random-user-result"></div>
+            </div>
+
+            <!-- عرض الإعدادات -->
+            <div id="settings-view" class="list-view hidden">
+                <h3>الإعدادات</h3>
+                
+                <div id="privacy-settings" class="section-card">
+                    <h4>الخصوصية</h4>
+                    <div>
+                        <label for="allow-random-match-toggle">السماح بالظهور في المطابقة العشوائية</label>
+                        <input type="checkbox" id="allow-random-match-toggle" checked>
+                    </div>
+                </div>
+
+                <div id="friends-management" class="section-card">
+                    <h4>إدارة الأصدقاء</h4>
+                    <ul id="friends-management-list">
+                        <!-- populated by JS -->
+                    </ul>
+                </div>
+
+                <div id="danger-zone" class="section-card">
+                    <h4>منطقة الخطر</h4>
+                    <p style="font-size: 14px; color: var(--light-text-color); margin-bottom: 15px; line-height: 1.6;">
+                        سيتم حذف حسابك وجميع بياناتك ومحادثاتك بشكل نهائي ولا يمكن استرجاعها.
+                    </p>
+                    <button id="delete-account-btn" class="danger-btn">حذف الحساب نهائياً</button>
+                </div>
+            </div>
+        </main>
+
+        <nav id="app-nav">
+            <button class="nav-btn active" data-view="private-chats-list-view">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <span>الدردشات</span>
+            </button>
+            <button class="nav-btn" data-view="search-view">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <span>بحث</span>
+            </button>
+            <button class="nav-btn" data-view="random-match-view">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM22 10h-2m-2-2l-1.4-1.4M4 10H2m2-2L2.6 6.6m18.8 8.8L20 14m-2 2l-1.4 1.4M4 14l-1.4 1.4M6 22v-2m2-2l1.4-1.4m8 0L16 18m2 2v-2"></path></svg>
+                <span>عشوائي</span>
+            </button>
+            <button class="nav-btn" data-view="settings-view">
+                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span>الإعدادات</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- واجهة الدردشة -->
+    <div id="chat-view">
+        <header class="chat-header">
+            <button id="back-to-list-btn">
+                <svg class="icon" style="transform: rotate(180deg);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <div class="chat-title-group">
+                <h2 id="chat-title"></h2>
+                <div id="typing-indicator"></div>
+            </div>
+        </header>
+        <main class="messages-list" id="messages-list"></main>
+        <footer class="message-form-container">
+            <form id="message-form">
+                <input type="text" id="message-input" placeholder="اكتب رسالتك..." autocomplete="off">
+                <button type="submit" id="send-button">
+                     <svg class="icon" style="transform: rotate(-45deg); margin-left: -3px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+    
+    <div id="toast-container"></div>
+</div>
+
+<script type="module">
+    // --- 1. تهيئة FIREBASE (مع المصادقة) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+    import { getDatabase, ref, get, set, update, push, onChildAdded, onChildChanged, onValue, off, onDisconnect, serverTimestamp, query, limitToLast, onChildRemoved } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPQInwJ5Ifm2urgQsSNzK7ZpKTaxSmutY",
+      authDomain: "chat-app-b4ae1.firebaseapp.com",
+      databaseURL: "https://chat-app-b4ae1-default-rtdb.firebaseio.com",
+      projectId: "chat-app-b4ae1",
+      storageBucket: "chat-app-b4ae1.firebasestorage.app",
+      messagingSenderId: "358771246997",
+      appId: "1:358771246997:web:9cfdabf18b7348fc10989c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    // --- 2. إدارة حالة التطبيق وعناصر الواجهة ---
+    let currentUser = null, activeChat = null, typingTimeout = null;
+    let activeListeners = {}; 
+
+    const statusIcons = {
+        sent: `<svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`,
+        read: `<svg class="icon-sm" style="stroke: var(--read-receipt-color);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.5l-9 9-4.5-4.5" /></svg>`
+    };
+    
+    const authView = document.getElementById('auth-view');
+    const mainAppView = document.getElementById('main-app-view');
+    const chatView = document.getElementById('chat-view');
+    const googleSignInBtn = document.getElementById('google-signin-btn');
+    const welcomeMessage = document.getElementById('welcome-message');
+    const logoutBtn = document.getElementById('logout-btn');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const contentViews = document.querySelectorAll('#app-content > .list-view');
+    const privateChatsList = document.getElementById('private-chats-list');
+    const noPrivateChatsPlaceholder = document.getElementById('no-private-chats-placeholder');
+    const backToListBtn = document.getElementById('back-to-list-btn');
+    const chatTitle = document.getElementById('chat-title');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const messagesList = document.getElementById('messages-list');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const findRandomBtn = document.getElementById('find-random-btn');
+    const randomUserResult = document.getElementById('random-user-result');
+    const friendRequestsList = document.getElementById('friend-requests-list');
+    const allowRandomMatchToggle = document.getElementById('allow-random-match-toggle');
+    const deleteAccountBtn = document.getElementById('delete-account-btn');
+    const friendsManagementList = document.getElementById('friends-management-list');
+    
+    // --- 3. نظام المصادقة والإعدادات (معدّل بالكامل) ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // المستخدم سجل دخوله
+            const userRef = ref(db, `users/${user.uid}`);
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) {
+                loginSuccess({ uid: user.uid, ...snapshot.val() });
+            } else {
+                // مستخدم جديد يسجل دخوله لأول مرة عبر جوجل
+                showToast("أهلاً بك! يتم إعداد حسابك.", "success");
+                const newUserProfile = {
+                    displayName: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    allowRandomMatch: true,
+                    createdAt: serverTimestamp()
+                };
+                await set(userRef, newUserProfile);
+                loginSuccess({ uid: user.uid, ...newUserProfile });
+            }
+        } else {
+            // المستخدم سجل خروجه
+            currentUser = null;
+            authView.classList.remove('hidden');
+            mainAppView.classList.add('hidden');
+            if (chatView.classList.contains('active')) {
+                chatView.classList.remove('active');
+            }
+            // مسح أي مستمعين نشطين
+            Object.values(activeListeners).forEach(l => { if(l && l.ref) off(l.ref, l.event, l.callback) });
+            activeListeners = {};
+        }
+    });
+
+    googleSignInBtn.addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+            // onAuthStateChanged سيتولى الباقي تلقائياً
+        } catch (error) {
+            console.error("Google Sign-In Error:", error);
+            showToast("حدث خطأ أثناء محاولة تسجيل الدخول.", "error");
+        }
+    });
+
+    function loginSuccess(userData) {
+        currentUser = userData;
+        allowRandomMatchToggle.checked = currentUser.allowRandomMatch ?? true;
+        
+        authView.classList.add('hidden');
+        mainAppView.classList.remove('hidden');
+        welcomeMessage.textContent = `أهلاً، ${currentUser.displayName}`;
+        
+        initializeMainApp();
+        setupGlobalPresence();
+    }
+    
+    logoutBtn.addEventListener('click', () => {
+        if(currentUser) {
+            // إزالة مؤشر التواجد قبل تسجيل الخروج
+            const presenceRef = ref(db, `presence/${currentUser.uid}`);
+            set(presenceRef, false);
+        }
+        signOut(auth);
+    });
+
+    function setupGlobalPresence() {
+        if (!currentUser) return;
+        const presenceRef = ref(db, `presence/${currentUser.uid}`);
+        // عند الاتصال، ضع الحالة true
+        set(presenceRef, true);
+        // عند انقطاع الاتصال، ضع الحالة false
+        onDisconnect(presenceRef).set(false);
+    }
+    
+    allowRandomMatchToggle.addEventListener('change', (e) => {
+        if(!currentUser) return;
+        const isAllowed = e.target.checked;
+        currentUser.allowRandomMatch = isAllowed;
+        update(ref(db, `users/${currentUser.uid}`), { allowRandomMatch: isAllowed })
+            .then(() => showToast("تم تحديث إعدادات الخصوصية", "success"))
+            .catch(() => showToast("حدث خطأ", "error"));
+    });
+
+    // --- 4. إدارة الواجهة الرئيسية والدردشة ---
+    function initializeMainApp() {
+        showView('private-chats-list-view'); 
+        listenForPrivateChats();
+        listenForFriendRequests();
+    }
+
+    navButtons.forEach(btn => btn.addEventListener('click', () => {
+        navButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const viewId = btn.dataset.view;
+        showView(viewId);
+        if(viewId === 'settings-view') {
+            populateFriendsForUnfriending();
+        }
+    }));
+    function showView(viewId) { contentViews.forEach(v => v.classList.add('hidden')); document.getElementById(viewId).classList.remove('hidden'); }
+    
+    function openChat(chatConfig) {
+        detachChatListeners();
+        activeChat = chatConfig; 
+        chatTitle.textContent = activeChat.name;
+        messagesList.innerHTML = ''; 
+        chatView.classList.add('active');
+        attachChatListeners();
+    }
+    
+    backToListBtn.addEventListener('click', () => {
+        chatView.classList.remove('active');
+        if (activeChat) setTypingStatus(false);
+        detachChatListeners();
+        activeChat = null;
+    });
+
+    // --- 5. منطق الدردشة المتقدم (معدّل لاستخدام UID) ---
+    function listenForPrivateChats() {
+        const chatsRef = ref(db, `user_chats/${currentUser.uid}`);
+        if(activeListeners.chatAdded) off(activeListeners.chatAdded.ref, 'child_added', activeListeners.chatAdded.callback);
+        if(activeListeners.chatRemoved) off(activeListeners.chatRemoved.ref, 'child_removed', activeListeners.chatRemoved.callback);
+        
+        privateChatsList.innerHTML = ''; // مسح القائمة قبل إعادة بنائها
+        privateChatsList.appendChild(noPrivateChatsPlaceholder);
+        
+        const checkEmptyList = () => { noPrivateChatsPlaceholder.style.display = privateChatsList.children.length > 1 ? 'none' : 'list-item'; };
+
+        activeListeners.chatAdded = { ref: chatsRef, event: 'child_added', callback: onChildAdded(chatsRef, (snapshot) => {
+            const chatData = snapshot.val();
+            if (!chatData || !chatData.partnerId) return;
+            noPrivateChatsPlaceholder.style.display = 'none';
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            li.id = `private-chat-${chatData.partnerId}`;
+            li.innerHTML = `<div class="list-item-content">${escapeHTML(chatData.partnerName)}</div><div id="presence-${chatData.partnerId}" class="online-indicator"></div>`;
+            li.addEventListener('click', () => openChat({type: 'private', id: chatData.partnerId, name: `${chatData.partnerName}`}));
+            privateChatsList.appendChild(li);
+            
+            const presenceRef = ref(db, `presence/${chatData.partnerId}`);
+            // استخدم onValue لمراقبة التواجد
+            onValue(presenceRef, presenceSnap => {
+                const indicator = document.getElementById(`presence-${chatData.partnerId}`);
+                if(indicator) indicator.classList.toggle('online', presenceSnap.val() === true);
+            });
+        }, { onlyOnce: false })};
+
+        activeListeners.chatRemoved = { ref: chatsRef, event: 'child_removed', callback: onChildRemoved(chatsRef, (snapshot) => {
+            const partnerId = snapshot.val()?.partnerId;
+            if (partnerId) {
+                const li = document.getElementById(`private-chat-${partnerId}`);
+                if (li) li.remove();
+            }
+            checkEmptyList();
+            populateFriendsForUnfriending(); 
+        })};
+
+        get(chatsRef).then(checkEmptyList); // تحقق من الحالة الأولية
+    }
+    
+    function getChatPath() {
+        if (!activeChat) return null;
+        const ids = [currentUser.uid, activeChat.id].sort();
+        return `private_chats/${ids.join('-')}`;
+    }
+
+    function attachChatListeners() {
+        const path = getChatPath();
+        if (!path) return;
+        const messagesRef = ref(db, `${path}/messages`);
+        const q = query(messagesRef, limitToLast(50));
+        
+        activeListeners.msgAdd = { ref: q, event: 'child_added', callback: onChildAdded(q, s => displayMessage(s.val(), s.key)) };
+        activeListeners.msgChange = { ref: messagesRef, event: 'child_changed', callback: onChildChanged(messagesRef, s => updateMessageDisplay(s.key, s.val())) };
+        
+        updateUnreadMessages();
+        const partnerId = activeChat.id;
+        const chatId = [currentUser.uid, partnerId].sort().join('-');
+        const typingRef = ref(db, `typing_indicators/${chatId}/${partnerId}`);
+        activeListeners.typing = { ref: typingRef, event: 'value', callback: onValue(typingRef, s => typingIndicator.textContent = s.val() === true ? "يكتب الآن..." : "") };
+    }
+
+    function detachChatListeners() {
+        Object.keys(activeListeners).forEach(key => {
+            if (key.startsWith('msg') || key.startsWith('typing')) {
+                const l = activeListeners[key];
+                if (l && l.ref) off(l.ref, l.event, l.callback);
+                delete activeListeners[key];
+            }
+        });
+        typingIndicator.textContent = "";
+    }
+    
+    messageForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+        if (!text || !activeChat) return;
+
+        const path = getChatPath();
+        await push(ref(db, `${path}/messages`), {
+            senderId: currentUser.uid, senderName: currentUser.displayName,
+            text, status: 'sent', timestamp: serverTimestamp()
+        });
+        
+        setTypingStatus(false);
+        messageInput.value = '';
+        messageInput.focus();
+    });
+    
+    function deleteMessage(messageId) {
+        if (!confirm("هل أنت متأكد من حذف هذه الرسالة للجميع؟")) return;
+        const path = getChatPath();
+        if (!path) return;
+        const messageRef = ref(db, `${path}/messages/${messageId}`);
+        update(messageRef, { text: "تم حذف هذه الرسالة", isDeleted: true });
+    }
+    
+    function displayMessage(data, id) {
+        if (!data) return;
+        const el = document.createElement('div');
+        el.className = 'message';
+        el.dataset.messageId = id;
+        const isMyMsg = data.senderId === currentUser.uid;
+        el.classList.add(isMyMsg ? 'my-message' : 'other-message');
+        if (data.isDeleted) el.classList.add('deleted');
+
+        const time = data.timestamp ? new Date(data.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+        el.innerHTML = `
+            <div class="message-text">${escapeHTML(data.text)}</div>
+            <div class="message-meta">
+                <span>${time}</span>
+                ${isMyMsg ? `<span class="message-status">${data.status === 'read' ? statusIcons.read : statusIcons.sent}</span>` : ''}
+            </div>
+            ${isMyMsg && !data.isDeleted ? `<button class="delete-btn" data-id="${id}">×</button>` : ''}
+        `;
+        messagesList.appendChild(el);
+        const deleteBtn = el.querySelector('.delete-btn');
+        if (deleteBtn) deleteBtn.addEventListener('click', (e) => deleteMessage(e.target.dataset.id));
+        messagesList.scrollTop = messagesList.scrollHeight;
+    }
+    
+    function updateMessageDisplay(id, data) {
+        const messageEl = document.querySelector(`[data-message-id="${id}"]`);
+        if (!messageEl) return;
+        if (data.senderId === currentUser.uid) {
+            const statusEl = messageEl.querySelector('.message-status');
+            if (statusEl && data.status === 'read') statusEl.innerHTML = statusIcons.read;
+        }
+        if (data.isDeleted) {
+            messageEl.classList.add('deleted');
+            messageEl.querySelector('.message-text').textContent = data.text;
+            messageEl.querySelector('.message-text').style.fontStyle = 'italic';
+            const deleteBtn = messageEl.querySelector('.delete-btn');
+            if(deleteBtn) deleteBtn.remove();
+        }
+    }
+    
+    function updateUnreadMessages() {
+        const path = getChatPath(); if (!path) return;
+        const messagesRef = ref(db, `${path}/messages`);
+        get(query(messagesRef, limitToLast(50))).then(snapshot => {
+            if (!snapshot.exists()) return;
+            snapshot.forEach(child => {
+                if (child.val().senderId !== currentUser.uid && child.val().status !== 'read') {
+                    update(ref(db, `${path}/messages/${child.key}`), { status: 'read' });
+                }
+            });
+        });
+    }
+    
+    messageInput.addEventListener('input', () => {
+        if (!activeChat) return;
+        clearTimeout(typingTimeout);
+        setTypingStatus(true);
+        typingTimeout = setTimeout(() => setTypingStatus(false), 2000);
+    });
+
+    function setTypingStatus(isTyping) {
+        if (!activeChat) return;
+        const chatId = [currentUser.uid, activeChat.id].sort().join('-');
+        const typingRef = ref(db, `typing_indicators/${chatId}/${currentUser.uid}`);
+        if(isTyping) {
+            set(typingRef, true);
+        } else {
+            // استخدام onDisconnect غير فعال هنا، الأفضل الحذف المباشر
+             typingRef.remove();
+        }
+    }
+    
+    // --- 6. المطابقة العشوائية وطلبات الصداقة ---
+    findRandomBtn.addEventListener('click', async () => {
+        findRandomBtn.disabled = true;
+        randomUserResult.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--light-text-color);"><em>جاري البحث...</em></p>`;
+        
+        const allUsersSnapshot = await get(ref(db, 'users'));
+        if (!allUsersSnapshot.exists()) {
+             randomUserResult.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--light-text-color);"><em>لا يوجد مستخدمون في النظام.</em></p>`;
+             findRandomBtn.disabled = false; return;
+        }
+        
+        const myFriendsSnapshot = await get(ref(db, `user_chats/${currentUser.uid}`));
+        const myRequestsSnapshot = await get(ref(db, 'friend_requests'));
+
+        const friends = myFriendsSnapshot.exists() ? Object.values(myFriendsSnapshot.val()).map(c => c.partnerId) : [];
+        const sentRequests = [];
+        const receivedRequests = myRequestsSnapshot.exists() && myRequestsSnapshot.hasChild(currentUser.uid) ? Object.keys(myRequestsSnapshot.val()[currentUser.uid]) : [];
+
+        if(myRequestsSnapshot.exists()){
+            Object.entries(myRequestsSnapshot.val()).forEach(([recipient, senders]) => {
+                if(Object.keys(senders).includes(currentUser.uid)) sentRequests.push(recipient);
+            });
+        }
+
+        const allUsers = [];
+        allUsersSnapshot.forEach(child => allUsers.push({ id: child.key, ...child.val() }));
+
+        const eligibleUsers = allUsers.filter(user =>
+            user.id !== currentUser.uid && user.allowRandomMatch !== false &&
+            !friends.includes(user.id) && !sentRequests.includes(user.id) && !receivedRequests.includes(user.id)
+        );
+
+        if (eligibleUsers.length > 0) {
+            const randomUser = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
+            randomUserResult.innerHTML = `
+                <div class="request-item">
+                    <span>${escapeHTML(randomUser.displayName)}</span>
+                    <div class="request-actions">
+                        <button class="accept-btn" data-id="${randomUser.id}" data-name="${randomUser.displayName}">إرسال طلب</button>
+                    </div>
+                </div>`;
+            randomUserResult.querySelector('button').addEventListener('click', sendFriendRequest);
+        } else {
+            randomUserResult.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--light-text-color);"><em>لا يوجد مستخدمون جدد متاحون حاليًا.</em></p>`;
+        }
+        findRandomBtn.disabled = false;
+    });
+
+    function sendFriendRequest(e) {
+        const targetId = e.target.dataset.id;
+        const targetName = e.target.dataset.name;
+        const requestRef = ref(db, `friend_requests/${targetId}/${currentUser.uid}`);
+        set(requestRef, { senderName: currentUser.displayName, timestamp: serverTimestamp() })
+            .then(() => {
+                showToast(`تم إرسال طلب الصداقة إلى ${targetName}`, "success");
+                e.target.textContent = 'تم الإرسال';
+                e.target.disabled = true;
+            });
+    }
+
+    function listenForFriendRequests() {
+        const requestsRef = ref(db, `friend_requests/${currentUser.uid}`);
+        friendRequestsList.innerHTML = ''; // مسح القائمة
+        onChildAdded(requestsRef, s => displayFriendRequest(s.key, s.val()));
+        onChildRemoved(requestsRef, s => document.getElementById(`request-${s.key}`)?.remove());
+    }
+
+    function displayFriendRequest(senderId, requestData) {
+        const li = document.createElement('li');
+        li.className = 'request-item';
+        li.id = `request-${senderId}`;
+        li.innerHTML = `
+            <span class="list-item-content">${escapeHTML(requestData.senderName)}</span>
+            <div class="request-actions">
+                <button class="accept-btn" data-id="${senderId}" data-name="${requestData.senderName}">قبول</button>
+                <button class="decline-btn" data-id="${senderId}">رفض</button>
+            </div>`;
+        friendRequestsList.prepend(li);
+        li.querySelector('.accept-btn').addEventListener('click', acceptFriendRequest);
+        li.querySelector('.decline-btn').addEventListener('click', declineFriendRequest);
+    }
+
+    async function acceptFriendRequest(e) {
+        const partnerId = e.target.dataset.id;
+        const partnerName = e.target.dataset.name;
+        const chatId = [currentUser.uid, partnerId].sort().join('-');
+        
+        const updates = {};
+        updates[`user_chats/${currentUser.uid}/${chatId}`] = { partnerId, partnerName };
+        updates[`user_chats/${partnerId}/${chatId}`] = { partnerId: currentUser.uid, partnerName: currentUser.displayName };
+        updates[`friend_requests/${currentUser.uid}/${partnerId}`] = null;
+
+        await update(ref(db), updates);
+        showToast(`لقد أصبحت صديقًا لـ ${partnerName}`, "success");
+    }
+
+    function declineFriendRequest(e) {
+        const senderId = e.target.dataset.id;
+        const requestRef = ref(db, `friend_requests/${currentUser.uid}/${senderId}`);
+        requestRef.remove();
+        showToast("تم رفض الطلب.", "success");
+    }
+
+    // --- 7. إدارة الأصدقاء وحذف الحساب ---
+    async function populateFriendsForUnfriending() {
+        friendsManagementList.innerHTML = '<li><em>جاري التحميل...</em></li>';
+        const snapshot = await get(ref(db, `user_chats/${currentUser.uid}`));
+        if (snapshot.exists()) {
+            friendsManagementList.innerHTML = '';
+            snapshot.forEach(child => {
+                const friend = child.val();
+                if(friend.partnerId) {
+                    const li = document.createElement('li');
+                    li.className = 'friend-item';
+                    li.innerHTML = `
+                        <span>${escapeHTML(friend.partnerName)}</span>
+                        <button class="remove-btn" data-id="${friend.partnerId}">إزالة</button>
+                    `;
+                    li.querySelector('.remove-btn').addEventListener('click', unfriendUser);
+                    friendsManagementList.appendChild(li);
+                }
+            });
+        } else {
+            friendsManagementList.innerHTML = '<li style="background:none; box-shadow:none; color: var(--light-text-color); text-align:center;"><em>لا يوجد أصدقاء حاليًا.</em></li>';
+        }
+    }
+    
+    async function unfriendUser(e) {
+        const friendId = e.target.dataset.id;
+        if (!confirm(`هل أنت متأكد من إزالة هذا الصديق؟ ستختفي المحادثة من قائمة كلاكما.`)) return;
+
+        const chatId = [currentUser.uid, friendId].sort().join('-');
+        const updates = {};
+        updates[`user_chats/${currentUser.uid}/${chatId}`] = null;
+        updates[`user_chats/${friendId}/${chatId}`] = null;
+        
+        await update(ref(db), updates);
+        showToast("تمت إزالة الصديق بنجاح.", "success");
+        // لا نحذف الرسائل، فقط الوصول إليها
+    }
+
+    deleteAccountBtn.addEventListener('click', () => {
+        const confirmation1 = prompt("للتأكيد، يرجى كتابة 'حذف' في المربع أدناه:");
+        if (confirmation1 !== 'حذف') { showToast("تم إلغاء عملية الحذف.", "error"); return; }
+        const confirmation2 = confirm("هل أنت متأكد تمامًا؟ هذا الإجراء لا يمكن التراجع عنه!");
+        if (!confirmation2) { showToast("تم إلغاء عملية الحذف.", "error"); return; }
+        deleteUserAccount();
+    });
+
+    async function deleteUserAccount() {
+        if (!currentUser) return;
+        const userToDelete = auth.currentUser;
+        if (!userToDelete) {
+             showToast("خطأ: لا يمكن العثور على المستخدم للمصادقة.", "error");
+             return;
+        }
+
+        const userId = currentUser.uid;
+        showToast("جاري حذف حسابك...", "success");
+
+        try {
+            const updates = {};
+            const userChatsSnapshot = await get(ref(db, `user_chats/${userId}`));
+            if (userChatsSnapshot.exists()) {
+                userChatsSnapshot.forEach(chatSnapshot => {
+                    const chatId = chatSnapshot.key;
+                    if(chatSnapshot.val()){
+                        const partnerId = chatSnapshot.val().partnerId;
+                        updates[`user_chats/${partnerId}/${chatId}`] = null;
+                        updates[`private_chats/${chatId}`] = null; // حذف سجل الرسائل
+                    }
+                });
+            }
+            
+            updates[`users/${userId}`] = null;
+            updates[`presence/${userId}`] = null;
+            updates[`user_chats/${userId}`] = null;
+            updates[`friend_requests/${userId}`] = null;
+
+            // حذف طلبات الصداقة المرسلة
+            const allRequestsSnapshot = await get(ref(db, 'friend_requests'));
+            if (allRequestsSnapshot.exists()) {
+                allRequestsSnapshot.forEach(recipientSnapshot => {
+                    if (recipientSnapshot.hasChild(userId)) {
+                        updates[`friend_requests/${recipientSnapshot.key}/${userId}`] = null;
+                    }
+                });
+            }
+            
+            await update(ref(db), updates);
+            await deleteUser(userToDelete); // حذف المستخدم من نظام المصادقة
+            showToast("تم حذف حسابك بنجاح.", "success");
+            // onAuthStateChanged سيتولى إعادة التوجيه تلقائيًا
+
+        } catch (error) {
+            console.error("Error deleting account:", error);
+            showToast("حدث خطأ أثناء حذف الحساب. قد تحتاج لتسجيل الدخول مرة أخرى لإتمام العملية.", "error");
+        }
+    }
+
+    // --- أدوات مساعدة ---
+    function showToast(message, type = "success") {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`; toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.addEventListener('transitionend', () => toast.remove());
+        }, 3000);
+    }
+    function escapeHTML(str) { return str ? str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''; }
+
+</script>
+</body>
+</html>
